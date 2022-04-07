@@ -5,7 +5,7 @@ env:
 
 jobs:
   check:
-    name: All Checks
+    name: All Checks 1
     runs-on: ubuntu-latest
 
     steps:
@@ -16,25 +16,25 @@ jobs:
           toolchain: stable
 
       - uses: actions-rs/cargo@v1
-        name: Build
+        name: Build 1
         with:
           command: build
           args: --tests
 
       - uses: actions-rs/cargo@v1
-        name: Run Tests
+        name: Run Tests 1
         with:
           command: test
 
       - uses: actions-rs/cargo@v1
-        name: Check formatting
+        name: Check formatting 1
         if: ${{ success() || failure() }}
         with:
           command: fmt
           args: --all -- --check
 
       - uses: actions-rs/cargo@v1
-        name: Clippy
+        name: Clippy 1
         if: ${{ success() || failure() }}
         with:
           command: clippy
