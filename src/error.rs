@@ -8,6 +8,7 @@ pub enum Error {
     NotFound,
     RedisError(redis::RedisError),
     TooManyHelpers,
+    DeadThread(std::sync::mpsc::SendError<crate::net::Message>),
 
     #[cfg(feature = "cli")]
     Hex(hex::FromHexError),
@@ -45,6 +46,8 @@ impl std::fmt::Display for Error {
 }
 
 forward_errors! {
+    std::sync::mpsc::SendError<crate::net::Message> => DeadThread,
+
     #[cfg(feature = "cli")]
     hex::FromHexError => Hex,
     std::io::Error => Io,
