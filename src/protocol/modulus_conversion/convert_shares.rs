@@ -3,11 +3,13 @@ use crate::{
     ff::{Field, Fp2},
     protocol::{
         context::ProtocolContext, modulus_conversion::double_random::DoubleRandom,
-        reveal_additive_binary::RevealAdditiveBinary, RecordId,
+        reveal_additive_binary::RevealAdditiveBinary, sort::SortStep::ModulusConversion, RecordId,
     },
     secret_sharing::Replicated,
 };
+
 use futures::future::{try_join, try_join_all};
+use std::iter::{repeat, zip};
 
 pub struct XorShares {
     num_bits: u8,
@@ -59,12 +61,10 @@ impl AsRef<str> for Step {
 /// If the revealed result is a `1`, that indicates that `r` was different than
 /// the secret input, so a sharing of `1 - r` is returned.
 impl ConvertShares {
-    #[allow(dead_code)]
     pub fn new(input: XorShares) -> Self {
         Self { input }
     }
 
-    #[allow(dead_code)]
     pub async fn execute<F: Field>(
         &self,
         ctx: ProtocolContext<'_, F>,
@@ -138,6 +138,36 @@ impl ConvertShares {
             Ok(r_big_field)
         }
     }
+}
+
+pub async fn convert_all_shares<F: Field>(
+    ctx: &ProtocolContext<'_, F>,
+    input: &[u64],
+) -> Result<Vec<Vec<Replicated<F>>>, BoxError> {
+    let converted_shares = try_join_all(zip(repeat(ctx), input).enumerate().map(
+        |(record_id, (ctx, row))| async move {
+            ConvertShares::new(XorShares {
+                num_bits: 64,
+                packed_bits: *row,
+            })
+            .execute(
+                ctx.narrow(&ModulusConversion(record_id.try_into().unwrap())),
+                RecordId::from(record_id),
+            )
+            .await
+        },
+    ))
+    .await?;
+
+    //Transpose the output to return bit-wise results
+    let cols = vec![Replicated::new(F::ZERO, F::ZERO); converted_shares.len()];
+    let mut output = vec![cols; converted_shares[0].len()];
+    for (row_idx, row) in converted_shares.into_iter().enumerate() {
+        for (col_idx, col) in row.into_iter().enumerate() {
+            output[col_idx][row_idx] = col;
+        }
+    }
+    Ok(output)
 }
 
 #[cfg(test)]

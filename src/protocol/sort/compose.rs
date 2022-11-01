@@ -26,7 +26,6 @@ pub struct Compose<'a, F> {
 }
 
 impl<'a, F: Field> Compose<'a, F> {
-    #[allow(dead_code)]
     pub fn new(sigma: &'a mut Vec<Replicated<F>>, rho: &'a mut Vec<Replicated<F>>) -> Self {
         Self { sigma, rho }
     }

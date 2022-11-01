@@ -151,7 +151,6 @@ impl<'a, F: Field> Shuffle<'a, F> {
     /// For this, we have three shuffle steps one per `shuffle_or_unshuffle_once` i.e. Step1, Step2 and Step3.
     /// The Shuffle object receives a step function and appends a `ShuffleStep` to form a concrete step
     /// ![Shuffle steps][shuffle]
-    #[allow(dead_code)]
     pub async fn execute(
         &mut self,
         ctx: ProtocolContext<'_, F>,
@@ -162,16 +161,15 @@ impl<'a, F: Field> Shuffle<'a, F> {
     {
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Shuffle, &ctx, Step1, permutations)
-            .await
-            .unwrap();
+            .await?;
+
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Shuffle, &ctx, Step2, permutations)
-            .await
-            .unwrap();
+            .await?;
+
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Shuffle, &ctx, Step3, permutations)
-            .await
-            .unwrap();
+            .await?;
 
         Ok(())
     }
@@ -190,16 +188,13 @@ impl<'a, F: Field> Shuffle<'a, F> {
     {
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Unshuffle, &ctx, Step3, permutations)
-            .await
-            .unwrap();
+            .await?;
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Unshuffle, &ctx, Step2, permutations)
-            .await
-            .unwrap();
+            .await?;
         *self.input = self
             .shuffle_or_unshuffle_once(ShuffleOrUnshuffle::Unshuffle, &ctx, Step1, permutations)
-            .await
-            .unwrap();
+            .await?;
 
         Ok(())
     }
