@@ -40,7 +40,7 @@ impl SecureApplyInv {
     /// 4. The permutation is revealed
     /// 5. All helpers call `apply` to apply the permutation locally.
     pub async fn execute<F: Field>(
-        ctx: &ProtocolContext<'_, F>,
+        ctx: ProtocolContext<'_, F>,
         input: &'_ mut Vec<Replicated<F>>,
         sort_permutation: &'_ mut Vec<Replicated<F>>,
     ) -> Result<(), BoxError> {
@@ -100,14 +100,11 @@ mod tests {
             let mut input_shares = generate_shares(input);
 
             let world = make_world(QueryId);
-            let context = make_contexts(&world);
+            let [ctx0, ctx1, ctx2] = make_contexts(&world);
 
-            let h0_future =
-                SecureApplyInv::execute(&context[0], &mut input_shares.0, &mut perm_shares.0);
-            let h1_future =
-                SecureApplyInv::execute(&context[1], &mut input_shares.1, &mut perm_shares.1);
-            let h2_future =
-                SecureApplyInv::execute(&context[2], &mut input_shares.2, &mut perm_shares.2);
+            let h0_future = SecureApplyInv::execute(ctx0, &mut input_shares.0, &mut perm_shares.0);
+            let h1_future = SecureApplyInv::execute(ctx1, &mut input_shares.1, &mut perm_shares.1);
+            let h2_future = SecureApplyInv::execute(ctx2, &mut input_shares.2, &mut perm_shares.2);
 
             try_join!(h0_future, h1_future, h2_future).unwrap();
 

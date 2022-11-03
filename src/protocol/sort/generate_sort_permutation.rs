@@ -5,7 +5,7 @@ use crate::{
         context::ProtocolContext,
         modulus_conversion::convert_shares::convert_shares_for_a_bit,
         sort::bit_permutation::BitPermutation,
-        sort::SortStep::{ApplyInv, BitPermutationStep, ComposeStep},
+        sort::SortStep::{ApplyInv, BitPermutationStep, ComposeStep, ModulusConversion},
         IpaProtocolStep::Sort,
     },
     secret_sharing::Replicated,
@@ -48,11 +48,16 @@ impl<'a> GenerateSortPermutation<'a> {
         let mut i_minus_1_compose = Vec::with_capacity(self.input.len());
         for bit_num in 0..self.num_bits {
             let ctx = ctx.narrow(&Sort(bit_num));
-            let mut bit_value_share =
-                convert_shares_for_a_bit(&ctx, self.input, self.num_bits, bit_num).await?;
+            let mut bit_value_share = convert_shares_for_a_bit(
+                ctx.narrow(&ModulusConversion),
+                self.input,
+                self.num_bits,
+                bit_num,
+            )
+            .await?;
             if bit_num != 0 {
                 SecureApplyInv::execute(
-                    &ctx.narrow(&ApplyInv),
+                    ctx.narrow(&ApplyInv),
                     &mut bit_value_share,
                     &mut i_minus_1_compose.clone(),
                 )

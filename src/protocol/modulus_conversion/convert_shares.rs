@@ -3,7 +3,7 @@ use crate::{
     ff::{Field, Fp2},
     protocol::{
         context::ProtocolContext, modulus_conversion::double_random::DoubleRandom,
-        reveal_additive_binary::RevealAdditiveBinary, sort::SortStep::ModulusConversion, RecordId,
+        reveal_additive_binary::RevealAdditiveBinary, RecordId,
     },
     secret_sharing::Replicated,
 };
@@ -144,7 +144,7 @@ impl ConvertShares {
 /// For a given vector of input shares, this returns a vector of modulus converted replicated shares of
 /// `bit_index` of each input.
 pub async fn convert_shares_for_a_bit<F: Field>(
-    ctx: &ProtocolContext<'_, F>,
+    ctx: ProtocolContext<'_, F>,
     input: &[u64],
     num_bits: u8,
     bit_index: u8,
@@ -155,11 +155,7 @@ pub async fn convert_shares_for_a_bit<F: Field>(
                 num_bits,
                 packed_bits: *row,
             })
-            .execute_one_bit(
-                ctx.narrow(&ModulusConversion(record_id)),
-                RecordId::from(record_id),
-                bit_index,
-            )
+            .execute_one_bit(ctx, RecordId::from(record_id), bit_index)
             .await
         },
     ))
