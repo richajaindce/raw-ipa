@@ -65,6 +65,7 @@ impl ConvertShares {
         Self { input }
     }
 
+    #[allow(dead_code)]
     pub async fn execute<F: Field>(
         &self,
         ctx: ProtocolContext<'_, F>,
@@ -107,7 +108,6 @@ impl ConvertShares {
         try_join_all(futures).await
     }
 
-    #[allow(dead_code)]
     pub async fn execute_one_bit<F: Field>(
         &self,
         ctx: ProtocolContext<'_, F>,
@@ -140,35 +140,31 @@ impl ConvertShares {
     }
 }
 
-pub async fn convert_all_shares<F: Field>(
+#[allow(clippy::module_name_repetitions)]
+/// For a given vector of input shares, this returns a vector of modulus converted replicated shares of
+/// `bit_index` of each input.
+pub async fn convert_shares_for_a_bit<F: Field>(
     ctx: &ProtocolContext<'_, F>,
     input: &[u64],
     num_bits: u8,
-) -> Result<Vec<Vec<Replicated<F>>>, BoxError> {
+    bit_index: u8,
+) -> Result<Vec<Replicated<F>>, BoxError> {
     let converted_shares = try_join_all(zip(repeat(ctx), input).enumerate().map(
         |(record_id, (ctx, row))| async move {
             ConvertShares::new(XorShares {
                 num_bits,
                 packed_bits: *row,
             })
-            .execute(
+            .execute_one_bit(
                 ctx.narrow(&ModulusConversion(record_id)),
                 RecordId::from(record_id),
+                bit_index,
             )
             .await
         },
     ))
     .await?;
-
-    //Transpose the output to return bit-wise results
-    let cols = vec![Replicated::new(F::ZERO, F::ZERO); converted_shares.len()];
-    let mut output = vec![cols; num_bits.into()];
-    for (row_idx, row) in converted_shares.into_iter().enumerate() {
-        for (col_idx, col) in row.into_iter().enumerate() {
-            output[col_idx][row_idx] = col;
-        }
-    }
-    Ok(output)
+    Ok(converted_shares)
 }
 
 #[cfg(test)]
