@@ -25,6 +25,7 @@ pub struct ProtocolContext<'a, F> {
     prss: &'a PrssEndpoint,
     gateway: &'a Gateway,
     accumulator: Option<SecurityValidatorAccumulator<F>>,
+    record_id: Option<RecordId>,
 }
 
 impl<'a, F: Field> ProtocolContext<'a, F> {
@@ -35,6 +36,7 @@ impl<'a, F: Field> ProtocolContext<'a, F> {
             prss: participant,
             gateway,
             accumulator: None,
+            record_id: None,
         }
     }
 
@@ -46,6 +48,7 @@ impl<'a, F: Field> ProtocolContext<'a, F> {
             prss: self.prss,
             gateway: self.gateway,
             accumulator: Some(accumulator),
+            record_id: self.record_id
         }
     }
 
@@ -71,6 +74,24 @@ impl<'a, F: Field> ProtocolContext<'a, F> {
             prss: self.prss,
             gateway: self.gateway,
             accumulator: self.accumulator.clone(),
+            record_id: self.record_id
+        }
+    }
+
+    pub fn bind(&self, record_id: RecordId) -> Self {
+        if let Some(prev_record_id) = self.record_id {
+            panic!("Cannot bind to {record_id:?} because already bound to record: {prev_record_id:?}")
+        }
+
+        ProtocolContext {
+            role: self.role,
+            // create a unique step that allows narrowing this context to the same step
+            // if it is bound to a different record id
+            step: UniqueStepId::from_step_id(&self.step),
+            prss: self.prss,
+            gateway: self.gateway,
+            accumulator: self.accumulator.clone(),
+            record_id: Some(record_id)
         }
     }
 
