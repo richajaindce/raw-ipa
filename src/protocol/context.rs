@@ -29,7 +29,7 @@ pub struct ProtocolContext<'a, S, F> {
     _marker: PhantomData<S>,
 }
 
-impl<'a, F: Field, SS: SecretSharing<F>> ProtocolContext<'a, SS, F> {
+impl<'a, F: Field, S: SecretSharing<F>> ProtocolContext<'a, S, F> {
     pub fn new(role: Role, participant: &'a PrssEndpoint, gateway: &'a Gateway) -> Self {
         Self {
             role,
@@ -57,7 +57,7 @@ impl<'a, F: Field, SS: SecretSharing<F>> ProtocolContext<'a, SS, F> {
     /// Make a sub-context.
     /// Note that each invocation of this should use a unique value of `step`.
     #[must_use]
-    pub fn narrow<S: Substep + ?Sized>(&self, step: &S) -> Self {
+    pub fn narrow<SS: Substep + ?Sized>(&self, step: &SS) -> Self {
         ProtocolContext {
             role: self.role,
             step: self.step.narrow(step),
