@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use futures::future::{try_join_all, join};
+use futures::future::{join, join_all};
 
 use crate::ff::Field;
 use crate::helpers::Role;
@@ -21,7 +21,7 @@ pub struct MaliciousReplicated<F: Field> {
 /// when the protocol is done.  This should not be used directly.
 #[async_trait]
 pub trait Downgrade {
-    type Target;
+    type Target: Send;
     async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target>;
 }
 
@@ -147,8 +147,7 @@ impl<F: Field> Mul<F> for MaliciousReplicated<F> {
 #[async_trait]
 impl<F: Field> Downgrade for MaliciousReplicated<F> {
     type Target = Replicated<F>;
-    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target>
-    {
+    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target> {
         UnauthorizedDowngradeWrapper(self.x)
     }
 }
@@ -160,12 +159,14 @@ where
     U: Downgrade + Send,
 {
     type Target = (<T>::Target, <U>::Target);
-    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target>
-    {
+    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target> {
         let one = self.0.downgrade();
         let two = self.1.downgrade();
         let output = join(one, two).await;
-        UnauthorizedDowngradeWrapper((output.0.access_without_downgrade(), output.1.access_without_downgrade()))
+        UnauthorizedDowngradeWrapper((
+            output.0.access_without_downgrade(),
+            output.1.access_without_downgrade(),
+        ))
     }
 }
 
@@ -175,14 +176,12 @@ where
     T: Downgrade + Send,
 {
     type Target = Vec<<T>::Target>;
-    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target>
-    {
-        let futures = self
-            .into_iter()
-            .map(|v| async move { v.downgrade().await.access_without_downgrade() })
-            .collect();
-        let output = futures.await;
-        UnauthorizedDowngradeWrapper(output)
+    async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target> {
+        let result = join_all(
+            self.into_iter()
+                .map(|v| async move { v.downgrade().await.access_without_downgrade() }),
+        );
+        UnauthorizedDowngradeWrapper(result.await)
     }
 }
 
