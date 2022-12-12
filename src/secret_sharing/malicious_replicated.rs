@@ -162,9 +162,10 @@ where
     type Target = (<T>::Target, <U>::Target);
     async fn downgrade(self) -> UnauthorizedDowngradeWrapper<Self::Target>
     {
-        let one = self.0.downgrade().await.access_without_downgrade();
-        let two = self.1.downgrade().await.access_without_downgrade();
-        UnauthorizedDowngradeWrapper(join(one, two).await)
+        let one = self.0.downgrade();
+        let two = self.1.downgrade();
+        let output = join(one, two).await;
+        UnauthorizedDowngradeWrapper((output.0.access_without_downgrade(), output.1.access_without_downgrade()))
     }
 }
 
