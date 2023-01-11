@@ -99,31 +99,31 @@ where
     let num_records = multi_bit_input[0].len();
 
     let ctx_across_bits = ctx.narrow(&MultiplyAcrossBits);
-    let idx_in_bits = idx.view_bits::<Lsb0>()[..num_multi_bits].iter().rev();
+    let idx_in_bits = &idx.view_bits::<Lsb0>()[..num_multi_bits];
 
-    let equality_check_futures = (0..num_records)
-        .zip(repeat(ctx_across_bits))
-        .zip(repeat(idx_in_bits))
-        .map(|((rec, ctx), idx_in_bits)| async move {
-            let share_of_one = ctx.share_of_one();
+    let equality_check_futures =
+        (0..num_records)
+            .zip(repeat(ctx_across_bits))
+            .map(|(rec, ctx)| async move {
+                let share_of_one = ctx.share_of_one();
 
-            let mult_input = zip(multi_bit_input, idx_in_bits)
-                .map(|(single_bit_input, bit)| {
-                    if *bit {
-                        single_bit_input[rec].clone()
-                    } else {
-                        -single_bit_input[rec].clone() + &share_of_one
-                    }
-                })
-                .collect::<Vec<_>>();
+                let mult_input = zip(multi_bit_input, idx_in_bits)
+                    .map(|(single_bit_input, bit)| {
+                        if *bit {
+                            single_bit_input[rec].clone()
+                        } else {
+                            -single_bit_input[rec].clone() + &share_of_one
+                        }
+                    })
+                    .collect::<Vec<_>>();
 
-            multiply_all_shares(
-                ctx,
-                RecordId::from(idx * num_records + rec),
-                mult_input.as_slice(),
-            )
-            .await
-        });
+                multiply_all_shares(
+                    ctx,
+                    RecordId::from(idx * num_records + rec),
+                    mult_input.as_slice(),
+                )
+                .await
+            });
 
     try_join_all(equality_check_futures).await
 }
