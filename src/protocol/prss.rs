@@ -4,12 +4,6 @@ use crate::rand::{CryptoRng, RngCore};
 use crate::secret_sharing::Replicated;
 use crate::sync::{Arc, Mutex};
 
-use aes::{
-    cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit},
-    Aes256,
-};
-use hkdf::Hkdf;
-use sha2::Sha256;
 use std::{collections::HashMap, fmt::Debug};
 #[cfg(debug_assertions)]
 use std::{collections::HashSet, fmt::Formatter};
@@ -72,8 +66,9 @@ pub trait SharedRandomness {
     /// and one that is known to the right helper.
     #[must_use]
     fn generate_fields<F: Field, I: Into<u128>>(&self, index: I) -> (F, F) {
-        let (l, r) = self.generate_values(index);
-        (F::from(l), F::from(r))
+        // let (l, r) = self.generate_values(index);
+        // (F::from(l), F::from(r))
+        (F::ZERO, F::ZERO)
     }
 
     ///
@@ -97,15 +92,17 @@ pub trait SharedRandomness {
     /// and subtracted once (as a right share), resulting in values that sum to zero.
     #[must_use]
     fn zero_u128<I: Into<u128>>(&self, index: I) -> u128 {
-        let (l, r) = self.generate_values(index);
-        l.wrapping_sub(r)
+        // let (l, r) = self.generate_values(index);
+        // l.wrapping_sub(r)
+        0
     }
 
     /// Generate an XOR share of zero.
     #[must_use]
     fn zero_xor<I: Into<u128>>(&self, index: I) -> u128 {
-        let (l, r) = self.generate_values(index);
-        l ^ r
+        // let (l, r) = self.generate_values(index);
+        // l ^ r
+        0
     }
 
     /// Generate an additive shares of a random value.
@@ -115,22 +112,25 @@ pub trait SharedRandomness {
     /// wrap around and populate the low bit.
     #[must_use]
     fn random_u128<I: Into<u128>>(&self, index: I) -> u128 {
-        let (l, r) = self.generate_values(index);
-        l.wrapping_add(r)
+        // let (l, r) = self.generate_values(index);
+        // l.wrapping_add(r)
+        0
     }
 
     /// Generate additive shares of zero in a field.
     #[must_use]
     fn zero<F: Field, I: Into<u128>>(&self, index: I) -> F {
-        let (l, r): (F, F) = self.generate_fields(index);
-        l - r
+        // let (l, r): (F, F) = self.generate_fields(index);
+        // l - r
+        F::ZERO
     }
 
     /// Generate additive shares of a random field value.
     #[must_use]
     fn random<F: Field, I: Into<u128>>(&self, index: I) -> F {
-        let (l, r): (F, F) = self.generate_fields(index);
-        l + r
+        // let (l, r): (F, F) = self.generate_fields(index);
+        // l + r
+        F::ZERO
     }
 }
 
@@ -349,17 +349,19 @@ impl KeyExchange {
 
     #[must_use]
     pub fn key_exchange(self, pk: &PublicKey) -> GeneratorFactory {
-        debug_assert_ne!(pk, &self.public_key(), "self key exchange detected");
-        let secret = self.sk.diffie_hellman(pk);
-        let kdf = Hkdf::<Sha256>::new(None, secret.as_bytes());
-        GeneratorFactory { kdf }
+        // debug_assert_ne!(pk, &self.public_key(), "self key exchange detected");
+        // let secret = self.sk.diffie_hellman(pk);
+        // let kdf = Hkdf::<Sha256>::new(None, secret.as_bytes());
+        GeneratorFactory { 
+            // kdf 
+        }
     }
 }
 
 /// This intermediate object exists so that multiple generators can be constructed,
 /// with each one dedicated to one purpose.
 pub struct GeneratorFactory {
-    kdf: Hkdf<Sha256>,
+    // kdf: Hkdf<Sha256>,
 }
 
 impl GeneratorFactory {
@@ -367,10 +369,10 @@ impl GeneratorFactory {
     #[allow(clippy::missing_panics_doc)] // Panic should be impossible.
     #[must_use]
     pub fn generator(&self, context: &[u8]) -> Generator {
-        let mut k = GenericArray::default();
-        self.kdf.expand(context, &mut k).unwrap();
+        // let mut k = GenericArray::default();
+        // self.kdf.expand(context, &mut k).unwrap();
         Generator {
-            cipher: Aes256::new(&k),
+            // cipher: Aes256::new(&k),
         }
     }
 }
@@ -378,7 +380,7 @@ impl GeneratorFactory {
 /// The basic generator.  This generates values based on an arbitrary index.
 #[derive(Debug, Clone)]
 pub struct Generator {
-    cipher: Aes256,
+    // cipher: Aes256,
 }
 
 impl Generator {
@@ -386,11 +388,12 @@ impl Generator {
     /// This uses the MMO^{\pi} function described in <https://eprint.iacr.org/2019/074>.
     #[must_use]
     pub fn generate(&self, index: u128) -> u128 {
-        let mut buf = index.to_le_bytes();
-        self.cipher
-            .encrypt_block(GenericArray::from_mut_slice(&mut buf));
+        // let mut buf = index.to_le_bytes();
+        // self.cipher
+        //     .encrypt_block(GenericArray::from_mut_slice(&mut buf));
 
-        u128::from_le_bytes(buf) ^ index
+        // u128::from_le_bytes(buf) ^ index
+        0
     }
 }
 
