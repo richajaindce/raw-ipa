@@ -24,6 +24,7 @@ clap = { version = "4.0.10", optional = true, features = ["derive"] }
 comfy-table = { version = "6.0.0", optional = true }
 config = "0.13.2"
 embed-doc-image = "0.1.4"
+flamegraph = "0.6.2"
 futures = "0.3.24"
 futures-util = "0.3.24"
 hex = { version = "0.4", features = ["serde"] }
@@ -88,6 +89,12 @@ debug = true
 [[bench]]
 name = "criterion_arithmetic"
 path = "benches/ct/arithmetic_circuit.rs"
+harness = false
+required-features = ["test-fixture"]
+
+[[bench]]
+name = "criterion_sort"
+path = "benches/ct/sort.rs"
 harness = false
 required-features = ["test-fixture"]
 
