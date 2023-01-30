@@ -2,7 +2,9 @@ use std::iter::{repeat, zip};
 
 use crate::repeat64str;
 use crate::secret_sharing::{
-    replicated::semi_honest::AdditiveShare as Replicated, ArithmeticShare, SecretSharing,
+    replicated::semi_honest::AdditiveShare as Replicated, 
+    replicated::malicious::AdditiveShare as MaliciousReplicated, 
+    ArithmeticShare, SecretSharing,
 };
 use crate::{
     error::Error,
@@ -65,6 +67,24 @@ impl<F: Field> Resharable<F> for Vec<Replicated<F>> {
     }
 }
 
+#[async_trait]
+impl<F: Field> Resharable<F> for Vec<MaliciousReplicated<F>> {
+    type Share = MaliciousReplicated<F>;
+
+    /// This is intended to be used for resharing vectors of bit-decomposed values.
+    /// # Errors
+    /// If the vector has more than 64 elements
+    async fn reshare<C>(&self, ctx: C, record_id: RecordId, to_helper: Role) -> Result<Self, Error>
+    where
+        C: Context<F, Share = <Self as Resharable<F>>::Share> + Send,
+    {
+        try_join_all(self.iter().enumerate().map(|(i, x)| {
+            let c = ctx.narrow(&InnerVectorElementStep::from(i));
+            async move { c.reshare(x, record_id, to_helper).await }
+        }))
+        .await
+    }
+}
 async fn reshare<F, C, S, T>(input: &[T], ctx: C, to_helper: Role) -> Result<Vec<T>, Error>
 where
     C: Context<F, Share = S> + Send,

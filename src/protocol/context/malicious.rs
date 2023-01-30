@@ -471,6 +471,25 @@ where
 }
 
 #[async_trait]
+impl<'a, F> UpgradeToMalicious<Vec<Vec<Replicated<F>>>, Vec<Vec<MaliciousReplicated<F>>>>
+    for UpgradeContext<'a, F, NoRecord>
+where
+    F: Field,
+{
+    async fn upgrade(
+        self,
+        input: Vec<Vec<Replicated<F>>>,
+    ) -> Result<Vec<Vec<MaliciousReplicated<F>>>, Error> {
+        try_join_all(
+            input
+                .into_iter()
+                .map(|share| async move { self.inner.upgrade(share).await }),
+        )
+        .await
+    }
+}
+
+#[async_trait]
 impl<'a, F> UpgradeToMalicious<Replicated<F>, MaliciousReplicated<F>>
     for UpgradeContext<'a, F, RecordId>
 where
