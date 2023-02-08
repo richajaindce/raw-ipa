@@ -16,7 +16,7 @@ use crate::{
     },
     secret_sharing::{
         replicated::malicious::AdditiveShare as MaliciousReplicated,
-        replicated::semi_honest::AdditiveShare as Replicated, SecretSharing,
+        replicated::semi_honest::AdditiveShare as Replicated, SecretSharing, ArithmeticShare, Arithmetic,
     },
 };
 
@@ -29,6 +29,7 @@ use super::{
 use crate::protocol::context::SemiHonestContext;
 use crate::protocol::sort::ShuffleRevealStep::GeneratePermutation;
 use embed_doc_image::embed_doc_image;
+use futures::Future;
 
 #[derive(Debug)]
 /// This object contains the output of `shuffle_and_reveal_permutation`
@@ -79,6 +80,10 @@ pub(super) async fn shuffle_and_reveal_permutation<
         revealed: revealed_permutation,
         randoms_for_shuffle: random_permutations_for_shuffle,
     })
+}
+
+async fn execute_malicious<A: Arithmetic<F>, S: SecretSharing<F>, F: Field, Fun: Fn(&[S]) -> Futur, Futur: Future<Output = T>, T>(semi_honest_ctx: C, input: &[A], f: Fun) -> Futur {
+    let mut malicious_validator = MaliciousValidator::new(semi_honest_ctx.clone());
 }
 
 /// This is a malicious implementation of shuffle and reveal.
