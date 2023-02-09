@@ -160,7 +160,8 @@ mod tests {
                         .collect::<Vec<_>>();
                     let converted_bk_shares = convert_all_bits(
                         &ctx,
-                        &convert_all_bits_local(ctx.role(), &bk_shares),
+                        convert_all_bits_local(ctx.role(), &bk_shares),
+                        input_len,
                         BreakdownKey::BITS,
                         NUM_MULTI_BITS,
                     )
@@ -225,7 +226,8 @@ mod tests {
                         let bk_shares = vec![share.breakdown_key];
                         let converted_bk_shares = convert_all_bits(
                             &ctx,
-                            &convert_all_bits_local(ctx.role(), &bk_shares),
+                            convert_all_bits_local(ctx.role(), &bk_shares),
+                            1,
                             BreakdownKey::BITS,
                             NUM_MULTI_BITS,
                         )

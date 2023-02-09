@@ -494,7 +494,8 @@ mod tests {
                         .collect::<Vec<_>>();
                     let converted_bk_shares = convert_all_bits(
                         &ctx,
-                        &convert_all_bits_local(ctx.role(), &bk_shares),
+                        convert_all_bits_local(ctx.role(), &bk_shares),
+                        num_records,
                         BreakdownKey::BITS,
                         NUM_MULTI_BITS,
                     )

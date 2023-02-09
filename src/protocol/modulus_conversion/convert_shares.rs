@@ -90,7 +90,7 @@ pub fn convert_bit_local<F: Field, B: BitArray>(
 pub fn convert_all_bits_local<F: Field, B: BitArray>(
     helper_role: Role,
     input: &[XorReplicated<B>],
-) -> Vec<Vec<BitConversionTriple<Replicated<F>>>> {
+) -> impl Iterator<Item = Vec<BitConversionTriple<Replicated<F>>>> + '_ {
     input
         .iter()
         .map(move |record| {
@@ -98,7 +98,7 @@ pub fn convert_all_bits_local<F: Field, B: BitArray>(
                 .map(|bit_index: u32| convert_bit_local::<F, B>(helper_role, bit_index, record))
                 .collect::<Vec<_>>()
         })
-        .collect::<Vec<_>>()
+        .into_iter()
 }
 
 /// Convert a locally-decomposed single bit into field elements.
@@ -135,7 +135,8 @@ where
 /// Propagates panics from convert shares
 pub async fn convert_all_bits<F, C, S>(
     ctx: &C,
-    locally_converted_bits: &[Vec<BitConversionTriple<S>>],
+    locally_converted_bits: impl Iterator<Item = Vec<BitConversionTriple<S>>>,
+    num_records: usize,
     num_bits: u32,
     num_multi_bits: u32,
 ) -> Result<Vec<Vec<Vec<S>>>, Error>
@@ -144,23 +145,29 @@ where
     C: Context<F, Share = S>,
     S: ArithmeticSecretSharing<F>,
 {
-    let ctx = ctx.set_total_records(locally_converted_bits.len());
+    let ctx = ctx.set_total_records(num_records);
 
     let all_bits = (0..num_bits as usize).collect::<Vec<_>>();
-    try_join_all(all_bits.chunks(num_multi_bits as usize).map(|chunk| {
-        try_join_all(
-            zip(locally_converted_bits, repeat(ctx.clone()))
-                .enumerate()
-                .map(|(idx, (record, ctx))| async move {
-                    convert_bit_list(
-                        ctx.narrow(&ModulusConversion(chunk[0].try_into().unwrap())),
-                        &chunk.iter().map(|i| &record[*i]).collect::<Vec<_>>(),
-                        RecordId::from(idx),
-                    )
-                    .await
-                }),
+    try_join_all(
+        zip(
+            repeat(&locally_converted_bits),
+            all_bits.chunks(num_multi_bits as usize),
         )
-    }))
+        .map(|(locally_converted_bits, chunk)| {
+            try_join_all(
+                zip(*locally_converted_bits, repeat(ctx.clone()))
+                    .enumerate()
+                    .map(|(idx, (record, ctx))| async move {
+                        convert_bit_list(
+                            ctx.narrow(&ModulusConversion(chunk[0].try_into().unwrap())),
+                            &chunk.iter().map(|i| &record[*i]).collect::<Vec<_>>(),
+                            RecordId::from(idx),
+                        )
+                        .await
+                    }),
+            )
+        }),
+    )
     .await
 }
 

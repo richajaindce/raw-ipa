@@ -105,7 +105,8 @@ mod tests {
                     let local_lists = convert_all_bits_local(ctx.role(), &mk_shares);
                     let converted_shares = convert_all_bits(
                         &ctx.narrow("convert_all_bits"),
-                        &local_lists,
+                        local_lists,
+                        COUNT,
                         MatchKey::BITS,
                         NUM_MULTI_BITS,
                     )
@@ -124,7 +125,8 @@ mod tests {
                         .collect::<Vec<_>>();
                     let converted_bk_shares = convert_all_bits(
                         &ctx,
-                        &convert_all_bits_local(ctx.role(), &bk_shares),
+                        convert_all_bits_local(ctx.role(), &bk_shares),
+                        COUNT,
                         BreakdownKey::BITS,
                         NUM_MULTI_BITS,
                     )

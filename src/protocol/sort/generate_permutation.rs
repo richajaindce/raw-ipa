@@ -393,7 +393,7 @@ mod tests {
                 |ctx: SemiHonestContext<Fp31>, mk_shares| async move {
                     let local_lists = convert_all_bits_local(ctx.role(), &mk_shares);
                     let converted_shares =
-                        convert_all_bits(&ctx, &local_lists, MatchKey::BITS, NUM_MULTI_BITS)
+                        convert_all_bits(&ctx, local_lists, COUNT, MatchKey::BITS, NUM_MULTI_BITS)
                             .await
                             .unwrap();
                     generate_permutation_opt(ctx.narrow("sort"), converted_shares.iter())

@@ -181,7 +181,8 @@ where
     // Breakdown key modulus conversion
     let converted_bk_shares = convert_all_bits(
         &ctx.narrow(&Step::ModulusConversionForBreakdownKeys),
-        &convert_all_bits_local(ctx.role(), &bk_shares),
+        convert_all_bits_local(ctx.role(), &bk_shares),
+        num_records,
         BK::BITS,
         num_multi_bits,
     )
@@ -192,7 +193,8 @@ where
     // Match key modulus conversion, and then sort
     let converted_mk_shares = convert_all_bits(
         &ctx.narrow(&Step::ModulusConversionForMatchKeys),
-        &convert_all_bits_local(ctx.role(), &mk_shares),
+        convert_all_bits_local(ctx.role(), &mk_shares),
+        num_records,
         MK::BITS,
         num_multi_bits,
     )
@@ -308,9 +310,11 @@ where
     // Match key modulus conversion, and then sort
     let converted_mk_shares = convert_all_bits(
         &m_ctx.narrow(&Step::ModulusConversionForMatchKeys),
-        &m_ctx
-            .upgrade(convert_all_bits_local(m_ctx.role(), &mk_shares))
-            .await?,
+        m_ctx
+            .upgrade(convert_all_bits_local(m_ctx.role(), &mk_shares).collect::<Vec<_>>())
+            .await?
+            .into_iter(),
+        num_records,
         MK::BITS,
         num_multi_bits,
     )
@@ -335,10 +339,12 @@ where
     // Breakdown key modulus conversion
     let converted_bk_shares = convert_all_bits(
         &m_ctx.narrow(&Step::ModulusConversionForBreakdownKeys),
-        &m_ctx
+        m_ctx
             .narrow(&Step::ModulusConversionForBreakdownKeys)
-            .upgrade(convert_all_bits_local(m_ctx.role(), &bk_shares))
-            .await?,
+            .upgrade(convert_all_bits_local(m_ctx.role(), &bk_shares).collect::<Vec<_>>())
+            .await?
+            .into_iter(),
+        num_records,
         BK::BITS,
         num_multi_bits,
     )
