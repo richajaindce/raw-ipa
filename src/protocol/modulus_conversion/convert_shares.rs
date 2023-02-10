@@ -1,15 +1,17 @@
-use crate::bits::BitArray;
-use crate::protocol::IpaProtocolStep::ModulusConversion;
-use crate::secret_sharing::Arithmetic as ArithmeticSecretSharing;
 use crate::{
+    bits::BitArray,
     error::Error,
     ff::Field,
     helpers::Role,
-    protocol::{basics::ZeroPositions, boolean::xor_sparse, context::Context, RecordId},
-    secret_sharing::replicated::semi_honest::{
-        AdditiveShare as Replicated, XorShare as XorReplicated,
+    protocol::{
+        basics::ZeroPositions, boolean::xor_sparse, context::Context, IpaProtocolStep, RecordId,
+    },
+    secret_sharing::{
+        replicated::semi_honest::{AdditiveShare as Replicated, XorShare as XorReplicated},
+        Arithmetic as ArithmeticSecretSharing,
     },
 };
+use crate::protocol::IpaProtocolStep::ModulusConversion;
 use futures::future::try_join_all;
 use std::iter::{repeat, zip};
 
@@ -33,7 +35,6 @@ use std::iter::{repeat, zip};
 ///! Now we simply need to XOR these three sharings together in `Z_p`. This is easy because
 ///! we know the secret-shared values are all either 0, or 1. As such, the XOR operation
 ///! is equivalent to fn xor(a, b) { a + b - 2*a*b }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Step {
     Xor1,
@@ -150,12 +151,12 @@ where
     let all_bits = (0..num_bits as usize).collect::<Vec<_>>();
     try_join_all(
         zip(
-            repeat(&locally_converted_bits),
+            repeat(locally_converted_bits),
             all_bits.chunks(num_multi_bits as usize),
         )
         .map(|(locally_converted_bits, chunk)| {
             try_join_all(
-                zip(*locally_converted_bits, repeat(ctx.clone()))
+                zip(locally_converted_bits, repeat(ctx.clone()))
                     .enumerate()
                     .map(|(idx, (record, ctx))| async move {
                         convert_bit_list(
@@ -190,7 +191,7 @@ where
             .enumerate()
             .map(|(i, (ctx, bit))| async move {
                 convert_bit(
-                    ctx.narrow(&ModulusConversion(i.try_into().unwrap())),
+                    ctx.narrow(&IpaProtocolStep::ModulusConversion(i.try_into().unwrap())),
                     record_id,
                     bit,
                 )
@@ -202,7 +203,6 @@ where
 
 #[cfg(all(test, not(feature = "shuttle")))]
 mod tests {
-
     use crate::ff::{Field, Fp32BitPrime};
     use crate::helpers::{Direction, Role};
     use crate::protocol::context::Context;
