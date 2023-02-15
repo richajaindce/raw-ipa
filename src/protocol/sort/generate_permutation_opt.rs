@@ -143,7 +143,8 @@ where
 /// # Errors
 pub async fn malicious_generate_permutation_opt<'a, F>(
     sh_ctx: SemiHonestContext<'_, F>,
-    mut sort_keys: impl Iterator<Item = &Vec<Vec<Replicated<F>>>>,
+    // mut sort_keys: impl Iterator<Item = &Vec<Vec<Replicated<F>>>>,
+    mut sort_keys: impl IntoIterator<Item = &Vec<Vec<Replicated<F>>>> + Iterator,
 ) -> Result<(MaliciousValidator<'_, F>, Vec<MaliciousReplicated<F>>), Error>
 where
     F: Field,
