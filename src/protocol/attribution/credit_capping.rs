@@ -21,16 +21,15 @@ pub async fn credit_capping<F, C, T>(
     ctx: C,
     input: &[MCCreditCappingInputRow<F, T>],
     cap: u32,
-) -> Result<Vec<MCCreditCappingOutputRow<F, T>>, Error>
+) -> Result<impl Iterator<Item = MCCreditCappingOutputRow<F, T>> + '_, Error>
 where
     F: Field,
     C: Context<F, Share = T>,
     T: Arithmetic<F>,
 {
     if cap == 1 {
-        return Ok(credit_capping_max_one(ctx, input)
-            .await?
-            .collect::<Vec<_>>());
+        return credit_capping_max_one(ctx, input)
+            .await;
     }
     let input_len = input.len();
 
@@ -75,8 +74,7 @@ where
         .enumerate()
         .map(|(i, x)| {
             MCCreditCappingOutputRow::new(x.breakdown_key.clone(), final_credits[i].clone())
-        })
-        .collect::<Vec<_>>();
+        });
 
     Ok(output)
 }
@@ -448,7 +446,7 @@ mod tests {
 
                     credit_capping(ctx, &modulus_converted_shares, CAP)
                         .await
-                        .unwrap()
+                        .unwrap().collect::<Vec<_>>()
                 },
             )
             .await;
