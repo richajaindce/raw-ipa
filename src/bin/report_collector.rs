@@ -272,12 +272,7 @@ async fn ipa(
     )
     .await;
 
-    tracing::info!(
-        "{m:?} IPA for {q} records took {t:?}",
-        m = ipa_query_config,
-        q = query_size,
-        t = mpc_time.elapsed()
-    );
+    tracing::info!("{m:?}", m = ipa_query_config);
 
     validate(expected, actual)
 }
