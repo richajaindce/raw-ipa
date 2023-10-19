@@ -142,6 +142,22 @@ mod tests {
         .await;
     }
 
+    #[tokio::test]
+    async fn create_test_oprfipa_with_attr_window() {
+        create_test(QueryConfig {
+            size: 1.try_into().unwrap(),
+            field_type: FieldType::Fp32BitPrime,
+            query_type: QueryType::OprfIpa(IpaQueryConfig {
+                per_user_credit_cap: 1,
+                max_breakdown_key: 1,
+                attribution_window_seconds: NonZeroU32::new(86_400),
+                num_multi_bits: 3,
+                plaintext_match_keys: true,
+            }),
+        })
+        .await;
+    }
+
     struct OverrideReq {
         field_type: String,
         query_type_params: String,

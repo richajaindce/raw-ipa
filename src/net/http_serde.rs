@@ -129,7 +129,7 @@ pub mod query {
             let query_type = match query_type.as_str() {
                 #[cfg(any(test, feature = "cli", feature = "test-fixture"))]
                 QueryType::TEST_MULTIPLY_STR => Ok(QueryType::TestMultiply),
-                QueryType::SEMIHONEST_IPA_STR | QueryType::MALICIOUS_IPA_STR => {
+                QueryType::SEMIHONEST_IPA_STR | QueryType::MALICIOUS_IPA_STR | QueryType::OPRF_IPA_STR => {
                     #[derive(serde::Deserialize)]
                     struct IPAQueryConfigParam {
                         per_user_credit_cap: u32,
@@ -159,6 +159,15 @@ pub mod query {
                         }
                         QueryType::MALICIOUS_IPA_STR => {
                             Ok(QueryType::MaliciousIpa(IpaQueryConfig {
+                                per_user_credit_cap,
+                                max_breakdown_key,
+                                attribution_window_seconds,
+                                num_multi_bits,
+                                plaintext_match_keys,
+                            }))
+                        }
+                        QueryType::OPRF_IPA_STR => {
+                            Ok(QueryType::OprfIpa(IpaQueryConfig {
                                 per_user_credit_cap,
                                 max_breakdown_key,
                                 attribution_window_seconds,
@@ -217,7 +226,7 @@ pub mod query {
             match self.query_type {
                 #[cfg(any(test, feature = "test-fixture", feature = "cli"))]
                 QueryType::TestMultiply => Ok(()),
-                QueryType::SemiHonestIpa(config) | QueryType::MaliciousIpa(config) => {
+                QueryType::SemiHonestIpa(config) | QueryType::MaliciousIpa(config) | QueryType::OprfIpa(config) => {
                     write!(
                         f,
                         "&per_user_credit_cap={}&max_breakdown_key={}&num_multi_bits={}",

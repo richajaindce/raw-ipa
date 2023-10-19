@@ -1,76 +1,49 @@
 use std::marker::PhantomData;
 
-use futures::{
-    stream::{iter, repeat},
-    Stream, StreamExt, TryStreamExt,
-};
+use futures::{Stream, TryStreamExt};
 
 use crate::{
     error::Error,
-    ff::{Gf2, Serializable},
+    ff::{Field, Gf2, PrimeField, Serializable},
     helpers::{
         query::{IpaQueryConfig, QuerySize},
-        BodyStream, LengthDelimitedStream, RecordsStream,
+        BodyStream, RecordsStream,
     },
-    hpke::{KeyPair, KeyRegistry},
     protocol::{
-        basics::{Reshare, ShareKnownValue},
-        context::{UpgradableContext, UpgradeContext, UpgradeToMalicious, UpgradedContext},
-        ipa::{ipa, ArithmeticallySharedIPAInputs, IPAInputRow},
-        modulus_conversion::BitConversionTriple,
-        sort::generate_permutation::ShuffledPermutationWrapper,
-        BasicProtocols, BreakdownKey, MatchKey, RecordId,
+        basics::ShareKnownValue,
+        context::{UpgradableContext, UpgradedContext},
+        prf_sharding::{attribution_and_capping_and_aggregation, PrfShardedIpaInputRow},
+        BreakdownKey, Timestamp, TriggerValue,
     },
-    report::{EventType, InvalidReportError},
+    report::{EventType, OprfReport},
     secret_sharing::{
-        replicated::{malicious::DowngradeMalicious, semi_honest::AdditiveShare as Replicated},
-        Linear as LinearSecretSharing, LinearRefOps,
+        replicated::{malicious::ExtendableField, semi_honest::AdditiveShare as Replicated},
+        SharedValue,
     },
-    sync::Arc,
 };
 
-pub struct OprfIpaQuery<F, C, S> {
+pub struct OprfIpaQuery<C, F> {
     config: IpaQueryConfig,
-    key_registry: Arc<KeyRegistry<KeyPair>>,
-    phantom_data: PhantomData<(F, C, S)>,
+    phantom_data: PhantomData<(C, F)>,
 }
 
-impl<F, C, S> OprfIpaQuery<F, C, S> {
-    pub fn new(config: IpaQueryConfig, key_registry: Arc<KeyRegistry<KeyPair>>) -> Self {
+impl<C, F> OprfIpaQuery<C, F> {
+    pub fn new(config: IpaQueryConfig) -> Self {
         Self {
             config,
-            key_registry,
             phantom_data: PhantomData,
         }
     }
 }
 
-impl<F, C, S, SB> OprfIpaQuery<F, C, S>
+impl<C, F> OprfIpaQuery<C, F>
 where
-    C: UpgradableContext + Send,
-    C::UpgradedContext<F>: UpgradedContext<F, Share = S>,
-    S: LinearSecretSharing<F>
-        + BasicProtocols<C::UpgradedContext<F>, F>
-        + Reshare<C::UpgradedContext<F>, RecordId>
-        + Serializable
-        + DowngradeMalicious<Target = Replicated<F>>
-        + 'static,
-    for<'r> &'r S: LinearRefOps<'r, S, F>,
-    C::UpgradedContext<Gf2>: UpgradedContext<Gf2, Share = SB>,
-    SB: LinearSecretSharing<Gf2>
-        + BasicProtocols<C::UpgradedContext<Gf2>, Gf2>
-        + DowngradeMalicious<Target = Replicated<Gf2>>
-        + 'static,
-    for<'r> &'r SB: LinearRefOps<'r, SB, Gf2>,
+    C: UpgradableContext,
+    C::UpgradedContext<F>: UpgradedContext<F, Share = Replicated<F>>,
+    C::UpgradedContext<Gf2>: UpgradedContext<Gf2, Share = Replicated<Gf2>>,
+    F: PrimeField + ExtendableField,
     Replicated<F>: Serializable + ShareKnownValue<C, F>,
-    IPAInputRow<F, MatchKey, BreakdownKey>: Serializable,
-    ShuffledPermutationWrapper<S, C::UpgradedContext<F>>: DowngradeMalicious<Target = Vec<u32>>,
-    for<'u> UpgradeContext<'u, C::UpgradedContext<F>, F, RecordId>: UpgradeToMalicious<'u, BitConversionTriple<Replicated<F>>, BitConversionTriple<S>>
-        + UpgradeToMalicious<
-            'u,
-            ArithmeticallySharedIPAInputs<F, Replicated<F>>,
-            ArithmeticallySharedIPAInputs<F, S>,
-        >,
+    Replicated<Gf2>: Serializable + ShareKnownValue<C, Gf2>,
 {
     #[tracing::instrument("oprf_ipa_query", skip_all, fields(sz=%query_size))]
     pub async fn execute<'a>(
@@ -81,7 +54,6 @@ where
     ) -> Result<Vec<Replicated<F>>, Error> {
         let Self {
             config,
-            key_registry,
             phantom_data: _,
         } = self;
         tracing::info!("New query: {config:?}");
@@ -89,18 +61,47 @@ where
 
         let input = if config.plaintext_match_keys {
             let mut v = assert_stream_send(RecordsStream::<
-                IPAInputRowOprfVersion<F, MatchKey, BreakdownKey>,
+                OprfReport<Timestamp, BreakdownKey, TriggerValue>,
                 _,
             >::new(input_stream))
             .try_concat()
             .await?;
-            v.truncate(sz); 
+            v.truncate(sz);
             v
         } else {
             panic!();
         };
 
-        attribution_and_capping_and_aggregation(ctx, input.as_slice(), config).await
+        // TODO: Compute OPRFs and shuffle and add dummies and stuff (Daniel's code will be called here)
+        let sharded_input = input
+            .into_iter()
+            .map(|single_row| {
+                let is_trigger_bit_share = if single_row.event_type == EventType::Trigger {
+                    Replicated::share_known_value(&ctx, Gf2::ONE)
+                } else {
+                    Replicated::share_known_value(&ctx, Gf2::ZERO)
+                };
+                PrfShardedIpaInputRow {
+                    prf_of_match_key: single_row.mk_oprf,
+                    is_trigger_bit: is_trigger_bit_share,
+                    breakdown_key: single_row.breakdown_key,
+                    trigger_value: single_row.trigger_value,
+                }
+            })
+            .collect::<Vec<_>>();
+        // Until then, we convert the output to something next function is happy about.
+
+        let user_cap: i32 = config.per_user_credit_cap.try_into().unwrap();
+        if (user_cap & (user_cap - 1)) != 0 {
+            panic!("This code only works for a user cap which is a power of 2");
+        }
+
+        attribution_and_capping_and_aggregation::<C, BreakdownKey, TriggerValue, F, _, Replicated<Gf2>>(
+            ctx,
+            sharded_input,
+            user_cap.ilog2().try_into().unwrap(),
+        )
+        .await
     }
 }
 

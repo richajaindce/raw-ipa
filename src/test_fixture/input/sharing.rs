@@ -288,8 +288,6 @@ impl IntoShares<OprfReport<Timestamp, BreakdownKey, TriggerValue>> for TestRawDa
         let timestamp = Timestamp::truncate_from(self.timestamp).share_with(rng);
         let breakdown_key = BreakdownKey::truncate_from(self.breakdown_key).share_with(rng);
         let trigger_value = TriggerValue::truncate_from(self.trigger_value).share_with(rng);
-        let epoch = 1;
-        let site_domain = DOMAINS[rng.gen_range(0..DOMAINS.len())].to_owned();
 
         zip(zip(timestamp, breakdown_key), trigger_value)
             .map(|((ts_share, bk_share), tv_share)| OprfReport {
@@ -298,8 +296,6 @@ impl IntoShares<OprfReport<Timestamp, BreakdownKey, TriggerValue>> for TestRawDa
                 event_type,
                 breakdown_key: bk_share,
                 trigger_value: tv_share,
-                epoch,
-                site_domain: site_domain.clone(),
             })
             .collect::<Vec<_>>()
             .try_into()

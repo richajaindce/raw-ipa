@@ -23,7 +23,7 @@ use ipa::{
     helpers::query::{IpaQueryConfig, QueryConfig, QuerySize, QueryType},
     hpke::{KeyRegistry, PublicKeyOnly},
     net::MpcHelperClient,
-    protocol::{BreakdownKey, MatchKey, Timestamp, TriggerValue},
+    protocol::{BreakdownKey, MatchKey},
     report::{KeyIdentifier, DEFAULT_KEY_ID},
     test_fixture::{
         ipa::{ipa_in_the_clear, IpaSecurityModel, TestRawDataRecord},
@@ -104,7 +104,7 @@ enum ReportCollectorCommand {
     /// Apply differential privacy noise to IPA inputs
     ApplyDpNoise(ApplyDpArgs),
     /// Execute OPRF IPA in a semi-honest majority setting
-    ExecuteOprfIpa(IpaQueryConfig),
+    OprfIpa(IpaQueryConfig),
 }
 
 #[derive(Debug, clap::Args)]
@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             gen_args,
         } => gen_inputs(count, seed, args.output_file, gen_args)?,
         ReportCollectorCommand::ApplyDpNoise(ref dp_args) => apply_dp_noise(&args, dp_args)?,
-        ReportCollectorCommand::ExecuteOprfIpa(config) => {
+        ReportCollectorCommand::OprfIpa(config) => {
             ipa(
                 &args,
                 &network,
@@ -240,13 +240,17 @@ async fn ipa(
 ) -> Result<(), Box<dyn Error>> {
     let input = InputSource::from(&args.input);
     let query_type: QueryType;
-    match security_model {
-        IpaSecurityModel::SemiHonest => {
+    match (security_model, oprf_algorithm) {
+        (IpaSecurityModel::SemiHonest, false) => {
             query_type = QueryType::SemiHonestIpa(ipa_query_config.clone());
         }
-        IpaSecurityModel::Malicious => {
+        (IpaSecurityModel::Malicious, false) => {
             query_type = QueryType::MaliciousIpa(ipa_query_config.clone())
         }
+        (IpaSecurityModel::SemiHonest, true) => {
+            query_type = QueryType::OprfIpa(ipa_query_config.clone());
+        }
+        (IpaSecurityModel::Malicious, true) => panic!("OPRF for malicious is not implemented as yet"),
     };
 
     let input_rows = input.iter::<TestRawDataRecord>().collect::<Vec<_>>();
@@ -276,13 +280,8 @@ async fn ipa(
 
     let mut key_registries = KeyRegistries::default();
     let actual = if oprf_algorithm {
-        playbook_oprf_ipa<Fp32BitPrime>(
-            &input_rows,
-            &helper_clients,
-            query_id,
-            ipa_query_config,
-        )
-        .await
+        playbook_oprf_ipa::<Fp32BitPrime>(&input_rows, &helper_clients, query_id, ipa_query_config)
+            .await
     } else {
         playbook_ipa::<Fp32BitPrime, MatchKey, BreakdownKey, _>(
             &input_rows,

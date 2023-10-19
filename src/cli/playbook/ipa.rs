@@ -14,7 +14,7 @@ use typenum::Unsigned;
 
 use crate::{
     cli::IpaQueryResult,
-    ff::{GaloisField, PrimeField, Serializable},
+    ff::{PrimeField, Serializable},
     helpers::{
         query::{IpaQueryConfig, QueryInput, QuerySize},
         BodyStream,
@@ -170,6 +170,7 @@ where
     AdditiveShare<Timestamp>: Serializable,
     AdditiveShare<BreakdownKey>: Serializable,
     AdditiveShare<TriggerValue>: Serializable,
+    AdditiveShare<F>: Serializable,
 {
     let mut buffers: [_; 3] = std::array::from_fn(|_| Vec::new());
     let query_size = records.len();
