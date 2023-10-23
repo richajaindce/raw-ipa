@@ -36,7 +36,12 @@ impl<S: LinearSecretSharing<Gf2>> SaturatingSum<S> {
         S: LinearSecretSharing<Gf2> + BasicProtocols<C, Gf2>,
         for<'a> &'a S: LinearRefOps<'a, S, Gf2>,
     {
-        assert!(self.sum.len() >= value.len());
+        assert!(
+            self.sum.len() >= value.len(),
+            "running sum {:?} was smaller than value to be added {:?}",
+            self.sum.len(),
+            value.len()
+        );
 
         let mut output_sum = Vec::with_capacity(self.sum.len());
         let mut carry_in = S::ZERO;

@@ -29,6 +29,7 @@ pub mod bucket;
 #[cfg(feature = "descriptive-gate")]
 pub mod feature_label_dot_product;
 
+#[derive(Debug)]
 pub struct PrfShardedIpaInputRow<BK: GaloisField, TV: GaloisField> {
     pub prf_of_match_key: u64,
     pub is_trigger_bit: Replicated<Gf2>,
@@ -592,6 +593,9 @@ where
     F: PrimeField + ExtendableField,
 {
     let num_records = user_level_attributions.len();
+    if num_records == 0 {
+        return Ok(vec![S::ZERO; 1 << BK::BITS]);
+    }
     let (bk_vec, tv_vec): (Vec<_>, Vec<_>) = user_level_attributions
         .into_iter()
         .map(|row| {

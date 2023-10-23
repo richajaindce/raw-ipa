@@ -250,7 +250,9 @@ async fn ipa(
         (IpaSecurityModel::SemiHonest, true) => {
             query_type = QueryType::OprfIpa(ipa_query_config.clone());
         }
-        (IpaSecurityModel::Malicious, true) => panic!("OPRF for malicious is not implemented as yet"),
+        (IpaSecurityModel::Malicious, true) => {
+            panic!("OPRF for malicious is not implemented as yet")
+        }
     };
 
     let input_rows = input.iter::<TestRawDataRecord>().collect::<Vec<_>>();

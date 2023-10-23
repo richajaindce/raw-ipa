@@ -1,9 +1,10 @@
+use generic_array::GenericArray;
+
 use super::Field;
 use crate::{
     ff::Serializable,
     secret_sharing::{Block, SharedValue},
 };
-use generic_array::GenericArray;
 
 pub trait PrimeField: Field {
     type PrimeInteger: Into<u128>;

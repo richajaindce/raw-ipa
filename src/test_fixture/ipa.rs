@@ -5,7 +5,8 @@ use crate::{
     ff::{PrimeField, Serializable},
     helpers::query::IpaQueryConfig,
     ipa_test_input,
-    protocol::{ipa::ipa, BreakdownKey, MatchKey},
+    protocol::{ipa::ipa, BreakdownKey, MatchKey, Timestamp, TriggerValue},
+    report::OprfReport,
     secret_sharing::{
         replicated::{
             malicious, malicious::ExtendableField, semi_honest,
@@ -200,29 +201,33 @@ pub async fn test_ipa<F>(
 #[cfg(feature = "in-memory-infra")]
 pub async fn test_oprf_ipa<F>(
     world: &super::TestWorld,
-    records: &[TestRawDataRecord],
+    mut records: Vec<TestRawDataRecord>,
     expected_results: &[u32],
     config: IpaQueryConfig,
-    security_model: IpaSecurityModel,
 ) where
-    // todo: for semi-honest we don't need extendable fields.
     F: PrimeField + ExtendableField + IntoShares<semi_honest::AdditiveShare<F>>,
     rand::distributions::Standard: rand::distributions::Distribution<F>,
+    semi_honest::AdditiveShare<F>: Serializable,
 {
     use crate::{
-        ff::{Gf2, Field},
+        ff::{Field, Gf2},
         protocol::{
+            basics::ShareKnownValue,
             prf_sharding::{attribution_and_capping_and_aggregation, PrfShardedIpaInputRow},
-            Timestamp, TriggerValue, basics::ShareKnownValue,
         },
-        report::{OprfReport, EventType},
-        test_fixture::Runner, secret_sharing::SharedValue,
+        report::EventType,
+        secret_sharing::SharedValue,
+        test_fixture::Runner,
     };
 
     let user_cap: i32 = config.per_user_credit_cap.try_into().unwrap();
-    if (user_cap & (user_cap - 1)) != 0 {
-        panic!("This code only works for a user cap which is a power of 2");
-    }
+    assert!(
+        user_cap & (user_cap - 1) == 0,
+        "This code only works for a user cap which is a power of 2"
+    );
+
+    //TODO(richaj) This manual sorting will be removed once we have the PRF sharding in place
+    records.sort_by(|a, b| b.user_id.cmp(&a.user_id));
 
     let result: Vec<F> = world
         .semi_honest(
@@ -252,15 +257,18 @@ pub async fn test_oprf_ipa<F>(
                     F,
                     _,
                     Replicated<Gf2>,
-                >(ctx, sharded_input, user_cap.ilog2().try_into().unwrap()).await.unwrap()
+                >(ctx, sharded_input, user_cap.ilog2().try_into().unwrap())
+                .await
+                .unwrap()
             },
         )
         .await
         .reconstruct();
 
-    let result = result
+    let mut result = result
         .into_iter()
         .map(|v| u32::try_from(v.as_u128()).unwrap())
         .collect::<Vec<_>>();
+    let _ = result.split_off(expected_results.len());
     assert_eq!(result, expected_results);
 }

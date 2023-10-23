@@ -52,8 +52,9 @@ where
         "Asking for more buckets ({breakdown_count}) than bits in the key ({}) allow",
         BK::BITS
     );
+
     assert!(
-        breakdown_count <= 128,
+        breakdown_count <= 256,
         "Our step implementation (BitOpStep) cannot go past 64"
     );
     let mut row_contribution = vec![value; breakdown_count];
@@ -221,7 +222,7 @@ pub mod tests {
                             RecordId::from(0),
                             breakdown_key_share,
                             value_share,
-                            129,
+                            257,
                             false,
                         )
                         .await

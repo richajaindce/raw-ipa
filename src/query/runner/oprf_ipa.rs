@@ -92,15 +92,19 @@ where
         // Until then, we convert the output to something next function is happy about.
 
         let user_cap: i32 = config.per_user_credit_cap.try_into().unwrap();
-        if (user_cap & (user_cap - 1)) != 0 {
-            panic!("This code only works for a user cap which is a power of 2");
-        }
+        assert!(
+            user_cap & (user_cap - 1) == 0,
+            "This code only works for a user cap which is a power of 2"
+        );
 
-        attribution_and_capping_and_aggregation::<C, BreakdownKey, TriggerValue, F, _, Replicated<Gf2>>(
-            ctx,
-            sharded_input,
-            user_cap.ilog2().try_into().unwrap(),
-        )
+        attribution_and_capping_and_aggregation::<
+            C,
+            BreakdownKey,
+            TriggerValue,
+            F,
+            _,
+            Replicated<Gf2>,
+        >(ctx, sharded_input, user_cap.ilog2().try_into().unwrap())
         .await
     }
 }

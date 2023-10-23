@@ -106,4 +106,4 @@ check "Sort benchmark" \
     cargo bench --bench oneshot_sort --no-default-features --features="enable-benches descriptive-gate"
 
 check "OPRF IPA benchmark" \
-    cargo bench --bench oneshot_oprf_ipa --no-default-features --features="enable-benches descriptive-gate" -- -n 62
+    cargo bench --bench oneshot_ipa --no-default-features --features="enable-benches descriptive-gate" -- -n 62 --oprf --per-user-cap 2 --max-trigger-value 4

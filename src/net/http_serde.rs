@@ -165,7 +165,9 @@ pub mod query {
             match self.query_type {
                 #[cfg(any(test, feature = "test-fixture", feature = "cli"))]
                 QueryType::TestMultiply => Ok(()),
-                QueryType::SemiHonestIpa(config) | QueryType::MaliciousIpa(config) | QueryType::OprfIpa(config)=> {
+                QueryType::SemiHonestIpa(config)
+                | QueryType::MaliciousIpa(config)
+                | QueryType::OprfIpa(config) => {
                     write!(
                         f,
                         "&per_user_credit_cap={}&max_breakdown_key={}&num_multi_bits={}",

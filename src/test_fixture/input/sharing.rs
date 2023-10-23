@@ -9,7 +9,7 @@ use crate::{
             AccumulateCreditInputRow, ApplyAttributionWindowInputRow, CreditCappingInputRow,
         },
         ipa::IPAInputRow,
-        BreakdownKey, MatchKey, Timestamp, TriggerValue,
+        BreakdownKey, MatchKey,
     },
     rand::Rng,
     report::{EventType, OprfReport, Report},
@@ -275,19 +275,21 @@ where
     }
 }
 
-impl IntoShares<OprfReport<Timestamp, BreakdownKey, TriggerValue>> for TestRawDataRecord {
-    fn share_with<R: Rng>(
-        self,
-        rng: &mut R,
-    ) -> [OprfReport<Timestamp, BreakdownKey, TriggerValue>; 3] {
+impl<TS, BK, TV> IntoShares<OprfReport<TS, BK, TV>> for TestRawDataRecord
+where
+    TS: GaloisField + IntoShares<Replicated<TS>>,
+    BK: GaloisField + IntoShares<Replicated<BK>>,
+    TV: GaloisField + IntoShares<Replicated<TV>>,
+{
+    fn share_with<R: Rng>(self, rng: &mut R) -> [OprfReport<TS, BK, TV>; 3] {
         let event_type = if self.is_trigger_report {
             EventType::Trigger
         } else {
             EventType::Source
         };
-        let timestamp = Timestamp::truncate_from(self.timestamp).share_with(rng);
-        let breakdown_key = BreakdownKey::truncate_from(self.breakdown_key).share_with(rng);
-        let trigger_value = TriggerValue::truncate_from(self.trigger_value).share_with(rng);
+        let timestamp = TS::truncate_from(self.timestamp).share_with(rng);
+        let breakdown_key = BK::truncate_from(self.breakdown_key).share_with(rng);
+        let trigger_value = TV::truncate_from(self.trigger_value).share_with(rng);
 
         zip(zip(timestamp, breakdown_key), trigger_value)
             .map(|((ts_share, bk_share), tv_share)| OprfReport {
@@ -302,57 +304,6 @@ impl IntoShares<OprfReport<Timestamp, BreakdownKey, TriggerValue>> for TestRawDa
             .unwrap()
     }
 }
-
-// impl IntoShares<OprfReport<Timestamp, BreakdownKey, TriggerValue>> for GenericReportTestInput<Gf2, MK, BreakdownKey> {
-//     fn share_with<R: Rng>(
-//         self,
-//         rng: &mut R,
-//     ) -> [OprfReport<Timestamp, BreakdownKey, TriggerValue>; 3] {
-//         // let mk_shares = self.match_key.unwrap().share_with(rng);
-//         // let event_type = if self.is_trigger_report.unwrap() != F::ZERO {
-//         //     EventType::Trigger
-//         // } else {
-//         //     EventType::Source
-//         // };
-//         // let trigger_value = self.trigger_value.share_with(rng);
-//         // let epoch = 1;
-//         // let site_domain = DOMAINS[rng.gen_range(0..DOMAINS.len())].to_owned();
-
-//         // zip(mk_shares, trigger_value)
-//         //     .map(|(mk_shares, trigger_value)| Report {
-//         //         timestamp: self.timestamp.unwrap().as_u128().try_into().unwrap(),
-//         //         mk_shares,
-//         //         event_type,
-//         //         breakdown_key: self.breakdown_key.unwrap(),
-//         //         trigger_value,
-//         //         epoch,
-//         //         site_domain: site_domain.clone(),
-//         //     })
-//         //     .collect::<Vec<_>>()
-//         //     .try_into()
-//         //     .unwrap()
-//         let event_type = if self.is_trigger_report {
-//             EventType::Trigger
-//         } else {
-//             EventType::Source
-//         };
-//         let timestamp = Timestamp::truncate_from(self.timestamp).share_with(rng);
-//         let breakdown_key = BreakdownKey::truncate_from(self.breakdown_key).share_with(rng);
-//         let trigger_value = TriggerValue::truncate_from(self.trigger_value).share_with(rng);
-
-//         zip(zip(timestamp, breakdown_key), trigger_value)
-//             .map(|((ts_share, bk_share), tv_share)| OprfReport {
-//                 timestamp: ts_share,
-//                 mk_oprf: self.user_id,
-//                 event_type,
-//                 breakdown_key: bk_share,
-//                 trigger_value: tv_share,
-//             })
-//             .collect::<Vec<_>>()
-//             .try_into()
-//             .unwrap()
-//     }
-// }
 
 impl<F> IntoShares<Report<F, MatchKey, BreakdownKey>>
     for GenericReportTestInput<F, MatchKey, BreakdownKey>

@@ -167,9 +167,6 @@ pub async fn playbook_oprf_ipa<F>(
 ) -> IpaQueryResult
 where
     F: PrimeField,
-    AdditiveShare<Timestamp>: Serializable,
-    AdditiveShare<BreakdownKey>: Serializable,
-    AdditiveShare<TriggerValue>: Serializable,
     AdditiveShare<F>: Serializable,
 {
     let mut buffers: [_; 3] = std::array::from_fn(|_| Vec::new());
@@ -237,8 +234,6 @@ where
     tracing::info!("Running IPA for {query_size:?} records took {t:?}", t = lat);
     let mut breakdowns = vec![0; usize::try_from(query_config.max_breakdown_key).unwrap()];
     for (breakdown_key, trigger_value) in results.into_iter().enumerate() {
-        // TODO: make the data type used consistent with `ipa_in_the_clear`
-        // I think using u32 is wrong, we should move to u128
         breakdowns[breakdown_key] += u32::try_from(trigger_value.as_u128()).unwrap();
     }
 

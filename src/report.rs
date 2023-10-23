@@ -1,16 +1,15 @@
-use bytes::{BufMut, Bytes};
-use generic_array::{ArrayLength, GenericArray};
-use hpke::Serializable as _;
-use rand_core::{CryptoRng, RngCore};
-use std::ops::Add;
 use std::{
     fmt::{Display, Formatter},
     marker::PhantomData,
     mem::size_of,
-    ops::Deref,
+    ops::{Add, Deref},
 };
-use typenum::Unsigned;
-use typenum::U8;
+
+use bytes::{BufMut, Bytes};
+use generic_array::{ArrayLength, GenericArray};
+use hpke::Serializable as _;
+use rand_core::{CryptoRng, RngCore};
+use typenum::{Unsigned, U8};
 
 use crate::{
     ff::{GaloisField, Gf40Bit, Gf8Bit, PrimeField, Serializable},
@@ -293,9 +292,6 @@ where
     TS: GaloisField,
     BK: GaloisField,
     TV: GaloisField,
-    Replicated<TS>: Serializable,
-    Replicated<BK>: Serializable,
-    Replicated<TV>: Serializable,
 {
     pub timestamp: Replicated<TS>,
     pub mk_oprf: u64,
@@ -315,8 +311,7 @@ impl Serializable for u64 {
     fn deserialize(buf: &GenericArray<u8, Self::Size>) -> Self {
         let mut buf_to = [0u8; 8];
         buf_to[..buf.len()].copy_from_slice(buf);
-
-        Self::try_from(u64::from_le_bytes(buf_to)).unwrap()
+        u64::from_le_bytes(buf_to)
     }
 }
 
