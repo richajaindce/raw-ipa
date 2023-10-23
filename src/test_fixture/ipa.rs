@@ -7,7 +7,10 @@ use crate::{
     ipa_test_input,
     protocol::{ipa::ipa, BreakdownKey, MatchKey},
     secret_sharing::{
-        replicated::{malicious, malicious::ExtendableField, semi_honest},
+        replicated::{
+            malicious, malicious::ExtendableField, semi_honest,
+            semi_honest::AdditiveShare as Replicated,
+        },
         IntoShares,
     },
     test_fixture::{input::GenericReportTestInput, Reconstruct},
@@ -151,7 +154,7 @@ pub async fn test_ipa<F>(
 {
     use super::Runner;
 
-    let records = records
+    let records: Vec<GenericReportTestInput<F, crate::ff::Gf40Bit, crate::ff::Gf8Bit>> = records
         .iter()
         .map(|x| {
             ipa_test_input!(
@@ -185,6 +188,78 @@ pub async fn test_ipa<F>(
             .await
             .reconstruct(),
     };
+    let result = result
+        .into_iter()
+        .map(|v| u32::try_from(v.as_u128()).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(result, expected_results);
+}
+
+/// # Panics
+/// If any of the IPA protocol modules panic
+#[cfg(feature = "in-memory-infra")]
+pub async fn test_oprf_ipa<F>(
+    world: &super::TestWorld,
+    records: &[TestRawDataRecord],
+    expected_results: &[u32],
+    config: IpaQueryConfig,
+    security_model: IpaSecurityModel,
+) where
+    semi_honest::AdditiveShare<F>: Serializable,
+    malicious::AdditiveShare<F>: Serializable,
+    // todo: for semi-honest we don't need extendable fields.
+    F: PrimeField + ExtendableField + IntoShares<semi_honest::AdditiveShare<F>>,
+    rand::distributions::Standard: rand::distributions::Distribution<F>,
+{
+    use crate::{
+        ff::{Gf2, Field},
+        protocol::{
+            prf_sharding::{attribution_and_capping_and_aggregation, PrfShardedIpaInputRow},
+            Timestamp, TriggerValue, basics::ShareKnownValue,
+        },
+        report::{OprfReport, EventType},
+        test_fixture::Runner, secret_sharing::SharedValue,
+    };
+
+    let user_cap: i32 = config.per_user_credit_cap.try_into().unwrap();
+    if (user_cap & (user_cap - 1)) != 0 {
+        panic!("This code only works for a user cap which is a power of 2");
+    }
+
+    let result: Vec<F> = world
+        .semi_honest(
+            records.into_iter(),
+            |ctx, input_rows: Vec<OprfReport<Timestamp, BreakdownKey, TriggerValue>>| async move {
+                let sharded_input = input_rows
+                    .into_iter()
+                    .map(|single_row| {
+                        let is_trigger_bit_share = if single_row.event_type == EventType::Trigger {
+                            Replicated::share_known_value(&ctx, Gf2::ONE)
+                        } else {
+                            Replicated::share_known_value(&ctx, Gf2::ZERO)
+                        };
+                        PrfShardedIpaInputRow {
+                            prf_of_match_key: single_row.mk_oprf,
+                            is_trigger_bit: is_trigger_bit_share,
+                            breakdown_key: single_row.breakdown_key,
+                            trigger_value: single_row.trigger_value,
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                attribution_and_capping_and_aggregation::<
+                    _,
+                    BreakdownKey,
+                    TriggerValue,
+                    F,
+                    _,
+                    Replicated<Gf2>,
+                >(ctx, sharded_input, user_cap.ilog2().try_into().unwrap()).await.unwrap()
+            },
+        )
+        .await
+        .reconstruct();
+
     let result = result
         .into_iter()
         .map(|v| u32::try_from(v.as_u128()).unwrap())
