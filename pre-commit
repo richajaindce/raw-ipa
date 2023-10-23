@@ -104,3 +104,6 @@ check "Arithmetic circuit benchmark" \
 
 check "Sort benchmark" \
     cargo bench --bench oneshot_sort --no-default-features --features="enable-benches descriptive-gate"
+
+check "OPRF IPA benchmark" \
+    cargo bench --bench oneshot_oprf_ipa --no-default-features --features="enable-benches descriptive-gate" -- -n 62

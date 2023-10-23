@@ -336,7 +336,7 @@ where
         <<Replicated<BK> as Serializable>::Size as Add<
             <Replicated<TV> as Serializable>::Size,
         >>::Output,
-    >>::Output: ArrayLength<u8>,
+    >>::Output: ArrayLength,
 {
     type Size = <<Replicated<TS> as Serializable>::Size as Add<
         <<Replicated<BK> as Serializable>::Size as Add<

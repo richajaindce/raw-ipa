@@ -205,8 +205,6 @@ pub async fn test_oprf_ipa<F>(
     config: IpaQueryConfig,
     security_model: IpaSecurityModel,
 ) where
-    semi_honest::AdditiveShare<F>: Serializable,
-    malicious::AdditiveShare<F>: Serializable,
     // todo: for semi-honest we don't need extendable fields.
     F: PrimeField + ExtendableField + IntoShares<semi_honest::AdditiveShare<F>>,
     rand::distributions::Standard: rand::distributions::Distribution<F>,
