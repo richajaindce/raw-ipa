@@ -4,7 +4,6 @@ use crate::{
 };
 
 pub mod sharing;
-
 // Struct that holds all possible fields of the input to IPA. Used for tests only.
 #[derive(Debug)]
 pub struct GenericReportShare<F: Field, MK: GaloisField, BK: GaloisField> {
