@@ -11,7 +11,10 @@ use crate::{
         ipa_prf::{
             boolean_ops::share_conversion_aby::convert_to_fp25519,
             prf_eval::{eval_dy_prf, gen_prf_key},
-            prf_sharding::{attribution_and_capping_and_aggregation, PrfShardedIpaInputRow},
+            prf_sharding::{
+                attribution_and_capping_and_aggregation, compute_histogram_of_users_with_row_count,
+                PrfShardedIpaInputRow,
+            },
         },
         RecordId,
     },
@@ -46,6 +49,12 @@ pub struct PrfIpaInputRow<BK: GaloisField, TV: GaloisField, TS: GaloisField> {
 /// IPA OPRF Protocol
 ///
 /// We return `Replicated<F>` as output.
+/// This protocol does following steps
+/// 1. Shuffles the input (TBD)
+/// 2. Converts boolean arrays of match keys to elliptical values
+/// 3. Computes OPRF on the match keys and reveals the OPRF
+/// 4. Sorts inputs based on reveal oprf and timestamp (TBD)
+/// 5. Computes the attribution, caps results and aggregates
 /// # Errors
 /// Propagates errors from config issues or while running the protocol
 /// # Panics
@@ -54,7 +63,6 @@ pub async fn oprf_ipa<C, BK, TV, TS, F>(
     ctx: C,
     input_rows: Vec<PrfIpaInputRow<BK, TV, TS>>,
     config: IpaQueryConfig,
-    histogram: &[usize],
 ) -> Result<Vec<Replicated<F>>, Error>
 where
     C: UpgradableContext,
@@ -71,6 +79,9 @@ where
         user_cap & (user_cap - 1) == 0,
         "This code only works for a user cap which is a power of 2"
     );
+
+    // TODO (richaj): Add shuffle either before the protocol starts or, after converting match keys to elliptical curve.
+    // We might want to do it earlier as that's a cleaner code
 
     let convert_ctx = ctx
         .narrow(&Step::ConvertFp25519)
@@ -106,16 +117,17 @@ where
             trigger_value: input.trigger_value,
             timestamp: input.timestamp,
         })
-        .collect();
+        .collect::<Vec<_>>();
 
-    println!("pseudonymed_inputs generated");
-    // println!("{:?}", pseudonymed_inputs);
+    let histogram = compute_histogram_of_users_with_row_count(&pseudonymed_inputs);
+
+    // TODO (richaj) : Call quicksort on match keys followed by timestamp before calling attribution logic
     attribution_and_capping_and_aggregation::<C, BK, TV, TS, Replicated<F>, F>(
         ctx,
         pseudonymed_inputs,
         user_cap.ilog2().try_into().unwrap(),
         config.attribution_window_seconds,
-        histogram,
+        &histogram,
     )
     .await
 }
@@ -134,7 +146,7 @@ pub mod tests {
     #[test]
     fn semi_honest() {
         const PER_USER_CAP: u32 = 16;
-        const EXPECTED: &[u128] = &[0, 2, 3, 0, 0, 0, 0, 0];
+        const EXPECTED: &[u128] = &[0, 2, 5, 0, 0, 0, 0, 0];
         const MAX_BREAKDOWN_KEY: u32 = 8;
         const NUM_MULTI_BITS: u32 = 3;
 
@@ -157,14 +169,7 @@ pub mod tests {
                     trigger_value: 0,
                 },
                 TestRawDataRecord {
-                    timestamp: 0,
-                    user_id: 68362,
-                    is_trigger_report: false,
-                    breakdown_key: 1,
-                    trigger_value: 0,
-                },
-                TestRawDataRecord {
-                    timestamp: 0,
+                    timestamp: 10,
                     user_id: 12345,
                     is_trigger_report: true,
                     breakdown_key: 0,
@@ -173,27 +178,39 @@ pub mod tests {
                 TestRawDataRecord {
                     timestamp: 0,
                     user_id: 68362,
+                    is_trigger_report: false,
+                    breakdown_key: 1,
+                    trigger_value: 0,
+                },
+                TestRawDataRecord {
+                    timestamp: 20,
+                    user_id: 68362,
                     is_trigger_report: true,
                     breakdown_key: 0,
                     trigger_value: 2,
                 },
             ];
 
-            let result: Vec<_> = world
+            let mut result: Vec<_> = world
                 .semi_honest(records.into_iter(), |ctx, input_rows| async move {
-                    let histogram = vec![0, 1, 1, 0, 0, 0, 0, 0];
                     oprf_ipa::<_, BreakdownKey, TriggerValue, Timestamp, Fp31>(
                         ctx,
                         input_rows,
                         IpaQueryConfig::no_window(PER_USER_CAP, MAX_BREAKDOWN_KEY, NUM_MULTI_BITS),
-                        &histogram,
                     )
                     .await
                     .unwrap()
                 })
                 .await
                 .reconstruct();
-            assert_eq!(result, EXPECTED);
+            result.truncate(EXPECTED.len());
+            assert_eq!(
+                result,
+                EXPECTED
+                    .iter()
+                    .map(|i| Fp31::try_from(*i).unwrap())
+                    .collect::<Vec<_>>()
+            );
         });
     }
 }

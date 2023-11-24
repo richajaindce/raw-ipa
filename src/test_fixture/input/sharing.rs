@@ -358,13 +358,13 @@ where
     }
 }
 
-impl<TS, BK, TV> IntoShares<OprfReport<TS, BK, TV>> for TestRawDataRecord
+impl<BK, TV, TS> IntoShares<OprfReport<BK, TV, TS>> for TestRawDataRecord
 where
-    TS: GaloisField + IntoShares<Replicated<TS>>,
     BK: GaloisField + IntoShares<Replicated<BK>>,
     TV: GaloisField + IntoShares<Replicated<TV>>,
+    TS: GaloisField + IntoShares<Replicated<TS>>,
 {
-    fn share_with<R: Rng>(self, rng: &mut R) -> [OprfReport<TS, BK, TV>; 3] {
+    fn share_with<R: Rng>(self, rng: &mut R) -> [OprfReport<BK, TV, TS>; 3] {
         let event_type = if self.is_trigger_report {
             EventType::Trigger
         } else {
@@ -409,9 +409,9 @@ where
             .unwrap()
             .share_with(rng);
         let is_trigger_bit = if self.is_trigger_report {
-            Gf2::try_from(Gf2::ONE).unwrap().share_with(rng)
+            Gf2::ONE.share_with(rng)
         } else {
-            Gf2::try_from(Gf2::ZERO).unwrap().share_with(rng)
+            Gf2::ZERO.share_with(rng)
         };
         let match_key = BA64::try_from(u128::from(self.user_id))
             .unwrap()
