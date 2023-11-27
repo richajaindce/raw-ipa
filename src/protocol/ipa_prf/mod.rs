@@ -100,7 +100,7 @@ where
 
     let prf_key = gen_prf_key(&convert_ctx);
 
-    let pseudonymed_user_ids = ctx
+    let pseudonymed_inputs = ctx
         .parallel_join(
             input_rows
                 .iter()
@@ -118,22 +118,29 @@ where
                             &record.match_key,
                         )
                         .await?;
-                        eval_dy_prf(eval_ctx, record_id, &prf_key, &prf_of_match_key).await
+                        let pseudonym = eval_dy_prf(eval_ctx, record_id, &prf_key, &prf_of_match_key).await?;
+                        Ok(PrfShardedIpaInputRow {
+                            prf_of_match_key: pseudonym,
+                            is_trigger_bit: record.is_trigger_bit,
+                            breakdown_key: record.breakdown_key,
+                            trigger_value: record.trigger_value,
+                            timestamp: record.timestamp,
+                        })
                     },
                 ),
         )
         .await?;
-    let pseudonymed_inputs = input_rows
-        .into_iter()
-        .zip(pseudonymed_user_ids.into_iter())
-        .map(|(input, pseudonym)| PrfShardedIpaInputRow {
-            prf_of_match_key: pseudonym,
-            is_trigger_bit: input.is_trigger_bit,
-            breakdown_key: input.breakdown_key,
-            trigger_value: input.trigger_value,
-            timestamp: input.timestamp,
-        })
-        .collect::<Vec<_>>();
+    // let pseudonymed_inputs = input_rows
+    //     .into_iter()
+    //     .zip(pseudonymed_user_ids.into_iter())
+    //     .map(|(input, pseudonym)| PrfShardedIpaInputRow {
+    //         prf_of_match_key: pseudonym,
+    //         is_trigger_bit: input.is_trigger_bit,
+    //         breakdown_key: input.breakdown_key,
+    //         trigger_value: input.trigger_value,
+    //         timestamp: input.timestamp,
+    //     })
+    //     .collect::<Vec<_>>();
 
     let histogram = compute_histogram_of_users_with_row_count(&pseudonymed_inputs);
 
