@@ -248,7 +248,8 @@ pub async fn test_oprf_ipa<F>(
 {
     use crate::{
         ff::boolean_array::{BA20, BA3, BA5, BA8},
-        protocol::ipa_prf::{oprf_ipa, PrfIpaInputRow},
+        protocol::ipa_prf::oprf_ipa,
+        report::OprfReport,
         test_fixture::Runner,
     };
 
@@ -258,7 +259,7 @@ pub async fn test_oprf_ipa<F>(
     let result: Vec<_> = world
         .semi_honest(
             records.into_iter(),
-            |ctx, input_rows: Vec<PrfIpaInputRow<BA8, BA3, BA20>>| async move {
+            |ctx, input_rows: Vec<OprfReport<_, _, _>>| async move {
                 oprf_ipa::<_, BA8, BA3, BA20, BA5, F>(ctx, input_rows, config)
                     .await
                     .unwrap()
