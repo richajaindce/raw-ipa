@@ -1,6 +1,5 @@
 #[cfg(feature = "descriptive-gate")]
-use std::iter::repeat;
-use std::iter::zip;
+use std::iter::{repeat, zip};
 
 #[cfg(feature = "descriptive-gate")]
 use ipa_macros::Step;
@@ -8,7 +7,7 @@ use ipa_macros::Step;
 #[cfg(feature = "descriptive-gate")]
 use crate::{
     error::Error,
-    ff::{boolean_array::BA64, CustomArray, Field, PrimeField, Serializable},
+    ff::{boolean::Boolean, boolean_array::BA64, CustomArray, Field, PrimeField, Serializable},
     helpers::query::IpaQueryConfig,
     protocol::{
         context::{UpgradableContext, UpgradedContext},
@@ -22,13 +21,12 @@ use crate::{
         },
         RecordId,
     },
-    secret_sharing::replicated::{
-        malicious::ExtendableField, semi_honest::AdditiveShare as Replicated,
+    secret_sharing::{
+        replicated::{malicious::ExtendableField, semi_honest::AdditiveShare as Replicated},
+        WeakSharedValue,
     },
 };
-use crate::{ff::boolean::Boolean, secret_sharing::WeakSharedValue};
 
-#[cfg(feature = "descriptive-gate")]
 mod boolean_ops;
 #[cfg(feature = "descriptive-gate")]
 pub mod prf_eval;
@@ -108,6 +106,7 @@ where
     .await
 }
 
+#[cfg(feature = "descriptive-gate")]
 async fn compute_prf_for_inputs<C, BK, TV, TS, F>(
     ctx: C,
     input_rows: Vec<PrfIpaInputRow<BK, TV, TS>>,

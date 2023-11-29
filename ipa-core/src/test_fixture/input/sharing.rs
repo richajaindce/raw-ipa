@@ -3,9 +3,9 @@ use std::iter::zip;
 use rand::{distributions::Standard, prelude::Distribution};
 
 #[cfg(feature = "descriptive-gate")]
-use crate::{ff::boolean_array::BA64, protocol::ipa_prf::PrfIpaInputRow};
+use crate::{ff::boolean_array::BA64, protocol::ipa_prf::PrfIpaInputRow, ff::boolean::Boolean};
 use crate::{
-    ff::{boolean::Boolean, Field, GaloisField, PrimeField, Serializable},
+    ff::{Field, GaloisField, PrimeField, Serializable},
     protocol::{
         attribution::input::{
             AccumulateCreditInputRow, ApplyAttributionWindowInputRow, CreditCappingInputRow,
