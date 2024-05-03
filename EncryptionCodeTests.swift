@@ -36,7 +36,7 @@ class InteroperablePrivateAttributionTests: XCTestCase {
     let privateKey = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: privateKeydata)
     
     var recipient = try HPKE.Recipient(privateKey: privateKey, ciphersuite: ciphersuite, info: encryptedShare.info, encapsulatedKey: encryptedShare.encapsulatedKey)
-    let shareData = try recipient.open(encryptedShare.matchKeyCiphertextAndTag)
+    let shareData = try recipient.open(encryptedShare.matchKeyCiphertextAndTag, authenticating: [])
     return IPAShare.fromData(shareData)
   }
   
@@ -97,9 +97,6 @@ class InteroperablePrivateAttributionTests: XCTestCase {
       print("metaDomain offset = \(total) value = \([UInt8](metaDomain.data(using: .utf8)!))")
       total += metaDomain.data(using: .utf8)!.count
 
-//      fileHandle.write(matchKeyBlob.info)
-////      print("Blob data written to file successfully at \(fileURL.absoluteString)")
-//      print("Info offset = \(total) value = \([UInt8](matchKeyBlob.info))")
       fileHandle.closeFile()
     
     let decryptedShare = try decryptShare(matchKeyBlob, privateKey: privateKeyOne)
