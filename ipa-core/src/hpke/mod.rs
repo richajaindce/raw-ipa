@@ -26,7 +26,7 @@ use crate::{
 
 /// IPA ciphersuite
 type IpaKem = hpke::kem::X25519HkdfSha256;
-type IpaAead = hpke::aead::AesGcm128;
+pub type IpaAead = hpke::aead::AesGcm128;
 type IpaKdf = hpke::kdf::HkdfSha256;
 
 pub type EncapsulationSize = <<IpaKem as hpke::Kem>::EncappedKey as Serializable>::OutputSize;
@@ -154,7 +154,10 @@ pub(crate) fn seal_in_place<'a, R: CryptoRng + RngCore, K: PublicKeyRegistry>(
         &[],
         rng,
     )?;
+    println!("encap_key :{:?}", encap_key.to_bytes());
 
+    println!("encrypted match key : {:?}", plaintext);
+    println!("tag :{:?}", tag.to_bytes());
     // at this point `plaintext` is no longer a pointer to the plaintext.
     Ok((encap_key, plaintext, tag))
 }

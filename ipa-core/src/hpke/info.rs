@@ -10,7 +10,7 @@ const DOMAIN: &str = "private-attribution";
 /// It is not guaranteed that the same receiver can be used for anything else.
 ///
 /// [`info`]: https://www.rfc-editor.org/rfc/rfc9180.html#name-creating-the-encryption-con
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Info<'a> {
     pub(super) key_id: KeyIdentifier,
     pub(super) epoch: Epoch,
