@@ -22,7 +22,8 @@ use crate::{
 
 // TODO(679): This needs to come from configuration.
 static HELPER_ORIGIN: &str = "github.com/private-attribution";
-static HELPER_ORIGIN_MATCH_KEY: &'static str = "www.one.com";
+// static HELPER_ORIGIN_MATCH_KEY: &'static str = "www.one.com";
+static HELPER_ORIGIN_MATCH_KEY: &'static str = HELPER_ORIGIN;
 
 pub type KeyIdentifier = u8;
 pub const DEFAULT_KEY_ID: KeyIdentifier = 0;

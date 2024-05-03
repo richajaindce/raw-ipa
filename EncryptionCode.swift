@@ -163,13 +163,13 @@ public final class IPAEncryptedMatchKey {
     switch whichHelper {
     case .One:
       publicKeyString = "92a6fb666c37c008defd74abf3204ebea685742eab8347b08e2f7c759893947a"
-      helperDomain = "www.one.com"
+      helperDomain = "github.com/private-attribution"
     case .Two:
       publicKeyString = "cfdbaaff16b30aa8a4ab07eaad2cdd80458208a1317aefbb807e46dce596617e"
-      helperDomain = "www.two.com"
+      helperDomain = "github.com/private-attribution"
     case .Three:
       publicKeyString = "b900be35da06106a83ed73c33f733e03e4ea5888b7ea4c912ab270b0b0f8381e"
-      helperDomain = "www.three.com"
+      helperDomain = "github.com/private-attribution"
     }
     
     if let publicKeyString, !publicKeyString.isEmpty, let helperDomain, !helperDomain.isEmpty {
