@@ -87,7 +87,8 @@ public final class IPAEncryptedMatchKey {
       data.append(0)
       withUnsafeBytes(of: keyId) { data.append(Data($0)) }
       withUnsafeBytes(of: epoch) { data.append(Data($0)) }
-      withUnsafeBytes(of: eventType) { data.append(Data($0)) }
+      data.append(eventType.toData())
+//      withUnsafeBytes(of: eventType) { data.append(Data($0)) }
       
       return data
       

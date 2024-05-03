@@ -64,13 +64,14 @@ class InteroperablePrivateAttributionTests: XCTestCase {
     let temporaryDirectory = fileManager.temporaryDirectory
     let temporaryFile = temporaryDirectory.appendingPathComponent("temp.txt")
 
-    // Create the temporary file
+//     Create the temporary file
     try fileManager.createFile(atPath: temporaryFile.path, contents: nil, attributes: nil)
 
     print("Temporary file path: \(temporaryFile.path)")
-    //     Define the file URL where you want to write the blob
+//         Define the file URL where you want to write the blob
     let fileURL = URL(fileURLWithPath: temporaryFile.path)
     let fileHandle = try FileHandle(forWritingTo: fileURL)
+//    fileHandle.write(matchKeyBlob.info)
     fileHandle.write(matchKeyBlob.encapsulatedKey)
       var total = 0
     print("encapsulated key offset = \(total) value = \([UInt8](matchKeyBlob.encapsulatedKey))")

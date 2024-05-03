@@ -747,7 +747,7 @@ mod test {
         secret_sharing::replicated::{semi_honest::AdditiveShare, ReplicatedSecretSharing},
     };
     use hpke::Deserializable;
-    use std::fs::File;
+    use std::{fs::File, io::Write};
     use std::io::Read;
 
     #[test]
@@ -850,6 +850,7 @@ mod test {
 
     #[test]
     fn test_swift_encryption() {
+
         let pk = hex::decode("92a6fb666c37c008defd74abf3204ebea685742eab8347b08e2f7c759893947a")
             .unwrap();
         let sk = hex::decode("53d58e022981f2edbf55fec1b45dbabd08a3442cb7b7c598839de5d7a5888bff")
