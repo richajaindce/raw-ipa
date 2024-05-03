@@ -561,7 +561,7 @@ where
     const KEY_IDENTIFIER_OFFSET: usize = Self::EVENT_TYPE_OFFSET + 1;
     const EPOCH_OFFSET: usize = Self::KEY_IDENTIFIER_OFFSET + 1;
     const SITE_DOMAIN_OFFSET: usize = Self::EPOCH_OFFSET + 2;
-    const INFO_OFFSET: usize = Self::SITE_DOMAIN_OFFSET + 12;
+    // const INFO_OFFSET: usize = Self::SITE_DOMAIN_OFFSET + 12;
 
     pub fn encap_key_mk(&self) -> &[u8] {
         &self.data[Self::ENCAP_KEY_MK_OFFSET..Self::CIPHERTEXT_MK_OFFSET]
@@ -593,12 +593,12 @@ where
     /// ## Panics
     /// Only if a `Report` constructor failed to validate the contents properly, which would be a bug.
     pub fn site_domain(&self) -> &str {
-        std::str::from_utf8(&self.data[Self::SITE_DOMAIN_OFFSET..Self::INFO_OFFSET]).unwrap() // validated on construction
+        std::str::from_utf8(&self.data[Self::SITE_DOMAIN_OFFSET..]).unwrap() // validated on construction
     }
 
-    pub fn get_info(&self) -> &[u8] {
-        &self.data[Self::INFO_OFFSET..]
-    }
+    // pub fn get_info(&self) -> &[u8] {
+    //     &self.data[Self::INFO_OFFSET..]
+    // }
 
     /// ## Errors
     /// If the report contents are invalid.
@@ -617,7 +617,7 @@ where
                 Self::SITE_DOMAIN_OFFSET,
             ));
         }
-        let site_domain = &bytes[Self::SITE_DOMAIN_OFFSET..Self::INFO_OFFSET];
+        let site_domain = &bytes[Self::SITE_DOMAIN_OFFSET..];
 
         if !site_domain.is_ascii() {
             return Err(NonAsciiStringError::from(site_domain).into());
@@ -646,22 +646,22 @@ where
         .unwrap(); // validated on construction
         println!("constructed info :{:?}", info);
 
-        let info = Info::new(
-            0,
-            0,
-            EventType::Source,
-            HELPER_ORIGIN_MATCH_KEY,
-            "www.meta.com",
-        )
-        .unwrap(); // validated on construction
+        // let info = Info::new(
+        //     0,
+        //     0,
+        //     EventType::Source,
+        //     HELPER_ORIGIN_MATCH_KEY,
+        //     "www.meta.com",
+        // )
+        // .unwrap(); // validated on construction
 
         let mut ct_mk: GenericArray<u8, CTMKLength> =
             *GenericArray::from_slice(self.mk_ciphertext());
         println!("encrypted mk :{:?}", ct_mk);
 
-        println!("Obtained info from swift {:?}", self.get_info());
-        println!("Rust info {:?}", info.to_bytes());
-        assert_eq!(*self.get_info(), *info.to_bytes());
+        // println!("Obtained info from swift {:?}", self.get_info());
+        // println!("Rust info {:?}", info.to_bytes());
+        // assert_eq!(*self.get_info(), *info.to_bytes());
         
         let plaintext_mk = open_in_place(key_registry, self.encap_key_mk(), &mut ct_mk, &info)?;
 

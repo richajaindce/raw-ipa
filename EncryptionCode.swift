@@ -150,7 +150,7 @@ public final class IPAEncryptedMatchKey {
     
     var sender = try HPKE.Sender(recipientKey: publicKey, ciphersuite: ciphersuite, info: reportInfoData)
     let shareData = share.toData()
-    let ciphertextAndTag = try sender.seal(shareData, authenticating: reportInfoData)
+    let ciphertextAndTag = try sender.seal(shareData)
     
     return MatchKeyEncryption(matchKeyCiphertextAndTag: ciphertextAndTag, encapsulatedKey: sender.encapsulatedKey, info: reportInfoData)
   }
