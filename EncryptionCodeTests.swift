@@ -97,7 +97,9 @@ class InteroperablePrivateAttributionTests: XCTestCase {
       print("metaDomain offset = \(total) value = \([UInt8](metaDomain.data(using: .utf8)!))")
       total += metaDomain.data(using: .utf8)!.count
 
+      fileHandle.write(matchKeyBlob.info)
 //      print("Blob data written to file successfully at \(fileURL.absoluteString)")
+      print("Info offset = \(total) value = \([UInt8](matchKeyBlob.info))")
       fileHandle.closeFile()
     
     let decryptedShare = try decryptShare(matchKeyBlob, privateKey: privateKeyOne)
