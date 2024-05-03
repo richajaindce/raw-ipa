@@ -154,7 +154,7 @@ pub(crate) fn seal_in_place<'a, R: CryptoRng + RngCore, K: PublicKeyRegistry>(
         &[],
         rng,
     )?;
-    println!("encap_key :{:?}", encap_key.to_bytes());
+    println!("encap_key :{:?}", encap_key.clone().to_bytes());
 
     println!("encrypted match key : {:?}", plaintext);
     println!("tag :{:?}", tag.to_bytes());

@@ -683,19 +683,6 @@ impl MatchKeyReport {
 
     /// # Errors
     /// If there is a problem encrypting the report.
-    pub fn delimited_encrypt_to<R: CryptoRng + RngCore, B: BufMut>(
-        &self,
-        key_id: KeyIdentifier,
-        key_registry: &impl PublicKeyRegistry,
-        rng: &mut R,
-        out: &mut B,
-    ) -> Result<(), InvalidReportError> {
-        out.put_u16_le(self.encrypted_len());
-        self.encrypt_to(key_id, key_registry, rng, out)
-    }
-
-    /// # Errors
-    /// If there is a problem encrypting the report.
     pub fn encrypt<R: CryptoRng + RngCore>(
         &self,
         key_id: KeyIdentifier,
