@@ -646,12 +646,21 @@ where
         .unwrap(); // validated on construction
         println!("constructed info :{:?}", info);
 
+        let info = Info::new(
+            0,
+            0,
+            EventType::Source,
+            HELPER_ORIGIN_MATCH_KEY,
+            "www.meta.com",
+        )
+        .unwrap(); // validated on construction
+
         let mut ct_mk: GenericArray<u8, CTMKLength> =
             *GenericArray::from_slice(self.mk_ciphertext());
         println!("encrypted mk :{:?}", ct_mk);
 
         println!("Obtained info from swift {:?}", self.get_info());
-        println!("my info {:?}", info.to_bytes());
+        println!("Rust info {:?}", info.to_bytes());
         assert_eq!(*self.get_info(), *info.to_bytes());
         
         let plaintext_mk = open_in_place(key_registry, self.encap_key_mk(), &mut ct_mk, &info)?;
