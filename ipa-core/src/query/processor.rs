@@ -409,25 +409,25 @@ mod tests {
         );
     }
 
-    // #[tokio::test]
-    // async fn rejects_duplicate_query_id() {
-    //     let handlers =
-    //         array::from_fn(|_| prepare_query_handler(|_| async { Ok(HelperResponse::ok()) }));
-    //     let network =
-    //         InMemoryMpcNetwork::new(handlers.each_ref().map(HandlerBox::owning_ref).map(Some));
-    //     let [t0, _, _] = network.transports();
-    //     let p0 = Processor::default();
-    //     let request = test_multiply_config();
+    #[tokio::test]
+    async fn rejects_duplicate_query_id() {
+        let handlers =
+            array::from_fn(|_| prepare_query_handler(|_| async { Ok(HelperResponse::ok()) }));
+        let network =
+            InMemoryMpcNetwork::new(handlers.each_ref().map(HandlerBox::owning_ref).map(Some));
+        let [t0, _, _] = network.transports();
+        let p0 = Processor::default();
+        let request = test_multiply_config();
 
-    //     let _qc = p0
-    //         .new_query(Transport::clone_ref(&t0), request)
-    //         .await
-    //         .unwrap();
-    //     assert!(matches!(
-    //         p0.new_query(t0, request).await,
-    //         Err(NewQueryError::State(StateError::AlreadyRunning)),
-    //     ));
-    // }
+        let _qc = p0
+            .new_query(Transport::clone_ref(&t0), request)
+            .await
+            .unwrap();
+        assert!(matches!(
+            p0.new_query(t0, request).await,
+            Err(NewQueryError::State(StateError::AlreadyRunning)),
+        ));
+    }
 
     #[tokio::test]
     async fn prepare_error() {

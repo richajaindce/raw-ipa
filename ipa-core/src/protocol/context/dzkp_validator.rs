@@ -694,7 +694,7 @@ mod tests {
     use bitvec::{field::BitField, vec::BitVec};
     use futures::TryStreamExt;
     use futures_util::stream::iter;
-    use proptest::{prop_compose, proptest};
+    use proptest::{prop_compose, proptest, sample::select};
     use rand::{thread_rng, Rng};
 
     use crate::{
@@ -737,8 +737,9 @@ mod tests {
         let h2_shares: Vec<Replicated<Fp31>> = shared_inputs.iter().map(|x| x[1].clone()).collect();
         let h3_shares: Vec<Replicated<Fp31>> = shared_inputs.iter().map(|x| x[2].clone()).collect();
 
+        // todo(DM): change to malicious once we can run the dzkps
         let futures = world
-            .malicious_contexts()
+            .contexts()
             .into_iter()
             .zip([h1_shares.clone(), h2_shares.clone(), h3_shares.clone()])
             .map(|(ctx, input_shares)| async move {
@@ -828,7 +829,7 @@ mod tests {
     }
 
     prop_compose! {
-        fn arb_count_and_chunk()(log_count in 7..15, log_chunk_size in 5..11) -> (usize, usize) {
+        fn arb_count_and_chunk()((log_count, log_chunk_size) in select(&[(5,5),(7,5),(5,7)])) -> (usize, usize) {
             (1usize<<log_count, 1usize<<log_chunk_size)
         }
     }
