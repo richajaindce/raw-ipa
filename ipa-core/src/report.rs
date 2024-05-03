@@ -708,7 +708,7 @@ impl MatchKeyReport {
             key_id,
             self.epoch,
             self.event_type,
-            HELPER_ORIGIN,
+            HELPER_ORIGIN_MATCH_KEY,
             self.site_domain.as_ref(),
         )?;
 
