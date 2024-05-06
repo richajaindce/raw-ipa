@@ -10,7 +10,7 @@ const DOMAIN: &str = "private-attribution";
 /// It is not guaranteed that the same receiver can be used for anything else.
 ///
 /// [`info`]: https://www.rfc-editor.org/rfc/rfc9180.html#name-creating-the-encryption-con
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Info<'a> {
     pub(super) key_id: KeyIdentifier,
     pub(super) epoch: Epoch,
@@ -52,7 +52,6 @@ impl<'a> Info<'a> {
 
     /// Converts this instance into an owned byte slice that can further be used to create HPKE
     /// sender or receiver context.
-    #[must_use]
     pub fn to_bytes(&self) -> Box<[u8]> {
         let info_len = DOMAIN.len()
             + self.helper_origin.len()

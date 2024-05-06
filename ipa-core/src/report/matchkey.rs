@@ -86,7 +86,7 @@ mod test {
             u16::from_le_bytes(
                 self.data[Self::EPOCH_OFFSET..Self::SITE_DOMAIN_OFFSET]
                     .try_into()
-                    .unwrap(), 
+                    .unwrap(),
             )
         }
         /// ## Panics
